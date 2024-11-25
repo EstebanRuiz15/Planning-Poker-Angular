@@ -1,0 +1,16 @@
+.card-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.card-image {
+  max-width: 90%;
+  height: auto;
+}
+
+.card-title {
+  color: rgba(255, 255, 255, 0.726);
+  font-size: 0.8rem;
+}
