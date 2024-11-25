@@ -1,0 +1,23 @@
+<main class="game-page-container">
+  <header class="logo-container" id="logoContainer">
+    <img src="../assets/images/ficha-de-poker.png" alt="Logo">
+  </header>
+  <h1 class="game-name">{{ gameName }}</h1>
+
+  <header class="header-buttons">
+    <div class="user-circle" *ngIf="userName">
+      <span>{{ getInitials(userName) }}</span>
+    </div>
+    <button class="custom-button" (click)="copyInvitationLink()">Invitar jugadores</button>
+  </header>
+
+  <section class="table-container">
+    <app-table-game></app-table-game>
+  </section>
+
+  <section class="cart-container">
+    <app-cart *ngFor="let number of fibonacciNumbers" [number]="number"></app-cart>
+    <app-cart [number]="'?'"></app-cart>
+    <app-cart [number]="'☕'"></app-cart>
+  </section>
+</main>
