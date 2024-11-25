@@ -1,0 +1,56 @@
+<article class="table-container">
+  <header class="cards-row">
+    <ng-container *ngIf="getPlayerForPosition('side-top-left')">
+      <app-card [title]="getPlayerForPosition('side-top-left')|| ''"></app-card>
+    </ng-container>
+
+    <ng-container *ngIf="getPlayerByID('center')?.assigned">
+      <section class="circle-container">
+        <div class="circle">
+          <span class="circle-text">
+            {{ getPlayerByID('center')?.name?.slice(0,2) }}
+          </span>
+        </div>
+        <div class="circle-name">
+          {{ getPlayerByID('center')?.name }}
+        </div>
+      </section>
+    </ng-container>
+
+    <ng-container *ngIf="getPlayerForPosition('side-top-right')">
+      <app-card [title]="getPlayerForPosition('side-top-right') || ''"></app-card>
+    </ng-container>
+  </header>
+
+  <section class="table-row-wrapper">
+    <ng-container *ngIf="getPlayerForPosition('left-side')">
+      <app-card
+        class="side-card left"
+        [title]="getPlayerForPosition('left-side')|| ''">
+      </app-card>
+    </ng-container>
+
+    <div class="table-row">
+      <div class="rectangle"></div>
+      <div class="rectangle-2"></div>
+      <div class="rectangle-3"></div>
+    </div>
+
+    <ng-container *ngIf="getPlayerForPosition('right-side')">
+      <app-card
+        class="side-card right"
+        [title]="getPlayerForPosition('right-side')|| ''">
+      </app-card>
+    </ng-container>
+  </section>
+
+  <footer class="cards-row">
+    <ng-container *ngFor="let id of ['bottom-left-1', 'bottom-center', 'bottom-right-1']">
+      <ng-container *ngIf="getPlayerForPosition(id)">
+        <app-card
+          [title]="getPlayerForPosition(id)|| ''">
+        </app-card>
+      </ng-container>
+    </ng-container>
+  </footer>
+</article>
