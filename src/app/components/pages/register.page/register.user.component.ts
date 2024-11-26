@@ -7,6 +7,7 @@ import { CustomValidators } from 'src/app/shared/services/Validators/CustomValid
 import { ActivatedRoute, Router } from '@angular/router';
 import { GameCommunicationService } from 'src/app/shared/services/functionalyty-service/comunicationService/comunicationService';
 import { NAME_CANNOT_ONLY_NUMBERS, NAME_MAX_3_NUMBERS, NAME_MAX_LENGTH, NAME_MIN_LENGHT, NAME_NO_SPECIAL_CHARACTERS, NAME_REQUIERED } from 'src/app/shared/Constants';
+import { ToastService } from 'src/app/shared/services/toast/toast.service';
 
 @Component({
   selector: 'app-register-user',
@@ -20,7 +21,6 @@ export class RegisterUserComponent implements OnInit, OnDestroy {
   showErrors = false;
   private errorTimeout: any;
   game: Game | null = null;
-  hasPlayers = false;
 
   get nameControl(): FormControl {
     return this.userForm.get('name') as FormControl;
@@ -34,7 +34,8 @@ export class RegisterUserComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private gameService: GameService,
     private router: Router,
-    private gameCommunicationService: GameCommunicationService
+    private gameCommunicationService: GameCommunicationService,
+    private toastService: ToastService
   ) {
     this.userForm = this.fb.group({
       name: ['', [
@@ -43,7 +44,7 @@ export class RegisterUserComponent implements OnInit, OnDestroy {
         Validators.maxLength(20),
         CustomValidators.gameNameValidator
       ]],
-      role: ['spectator']
+      role: ['player']
     });
   }
 
@@ -72,10 +73,6 @@ export class RegisterUserComponent implements OnInit, OnDestroy {
         next: (game) => {
           this.game = game;
           const storedUsers = this.getUsersByGameId(gameId);
-          this.hasPlayers = storedUsers.length > 0;
-          if (!this.hasPlayers) {
-            this.roleControl.setValue('admin');
-          }
         },
         error: (err) => {
         }
@@ -114,7 +111,7 @@ export class RegisterUserComponent implements OnInit, OnDestroy {
         id: this.generateId(),
         gameId: gameId,
         name: this.userForm.value.name,
-        rol: this.userForm.value.role === 'player' ? RolUsuario.PLAYER : RolUsuario.VIEWER,
+        rol: this.userForm.value.role === 'spectator' ? RolUsuario.VIEWER  : RolUsuario.PLAYER,
         assigned: false
       };
       this.handleCreateUser(newUser);
@@ -136,6 +133,11 @@ export class RegisterUserComponent implements OnInit, OnDestroy {
           this.router.navigate(['/game', gameId]);
         },
         error: (err) => {
+          if (err.message === 'Game is full') {
+            this.toastService.showToast('Partida llena', 'error');
+          } else {
+            this.toastService.showToast('Error al unirse al juego', 'error');
+          }
         }
       });
     }

@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { ToastService } from '../../../shared/services/toast/toast.service';
+import { ToastService } from 'src/app/shared/services/toast/toast.service';
 
 @Component({
   selector: 'app-toast',
@@ -22,7 +22,7 @@ export class ToastComponent implements OnInit {
 
       setTimeout(() => {
         this.isVisible = false;
-      }, 3000);
+      }, 4000);
     });
   }
 

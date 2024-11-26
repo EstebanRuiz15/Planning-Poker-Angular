@@ -1,14 +1,26 @@
 <article class="table-container">
   <header class="cards-row">
-    <ng-container *ngIf="getPlayerForPosition('side-top-left')">
-      <app-card [title]="getPlayerForPosition('side-top-left')|| ''"></app-card>
+    <ng-container *ngIf="getPlayerByID('side-top-left')?.rol === 'player'">
+      <app-card [title]="getPlayerForPosition('side-top-left') || ''"></app-card>
     </ng-container>
-
-    <ng-container *ngIf="getPlayerByID('center')?.assigned">
+    <ng-container *ngIf="getPlayerByID('side-top-left')?.rol === 'viwer'">
       <section class="circle-container">
         <div class="circle">
           <span class="circle-text">
-            {{ getPlayerByID('center')?.name?.slice(0,2) }}
+            {{ getPlayerByID('side-top-left')?.name?.slice(0, 2) }}
+          </span>
+        </div>
+        <div class="circle-name">
+          {{ getPlayerByID('side-top-left')?.name }}
+        </div>
+      </section>
+    </ng-container>
+
+    <ng-container *ngIf="getPlayerByID('center')?.rol === 'viwer'">
+      <section class="circle-container">
+        <div class="circle">
+          <span class="circle-text">
+            {{ getPlayerByID('center')?.name?.slice(0, 2) }}
           </span>
         </div>
         <div class="circle-name">
@@ -16,18 +28,42 @@
         </div>
       </section>
     </ng-container>
+    <ng-container *ngIf="getPlayerByID('center')?.rol === 'player'">
+      <app-card [title]="getPlayerForPosition('center') || ''"></app-card>
+    </ng-container>
 
-    <ng-container *ngIf="getPlayerForPosition('side-top-right')">
+    <ng-container *ngIf="getPlayerByID('side-top-right')?.rol === 'player'">
       <app-card [title]="getPlayerForPosition('side-top-right') || ''"></app-card>
+    </ng-container>
+    <ng-container *ngIf="getPlayerByID('side-top-right')?.rol === 'viwer'">
+      <section class="circle-container">
+        <div class="circle">
+          <span class="circle-text">
+            {{ getPlayerByID('side-top-right')?.name?.slice(0, 2) }}
+          </span>
+        </div>
+        <div class="circle-name">
+          {{ getPlayerByID('side-top-right')?.name }}
+        </div>
+      </section>
     </ng-container>
   </header>
 
   <section class="table-row-wrapper">
-    <ng-container *ngIf="getPlayerForPosition('left-side')">
-      <app-card
-        class="side-card left"
-        [title]="getPlayerForPosition('left-side')|| ''">
-      </app-card>
+    <ng-container *ngIf="getPlayerByID('left-side')?.rol === 'player'">
+      <app-card class="side-card left" [title]="getPlayerForPosition('left-side') || ''"></app-card>
+    </ng-container>
+    <ng-container *ngIf="getPlayerByID('left-side')?.rol === 'viwer'">
+      <section class="circle-container">
+        <div class="circle">
+          <span class="circle-text">
+            {{ getPlayerByID('left-side')?.name?.slice(0, 2) }}
+          </span>
+        </div>
+        <div class="circle-name">
+          {{ getPlayerByID('left-side')?.name }}
+        </div>
+      </section>
     </ng-container>
 
     <div class="table-row">
@@ -36,20 +72,39 @@
       <div class="rectangle-3"></div>
     </div>
 
-    <ng-container *ngIf="getPlayerForPosition('right-side')">
-      <app-card
-        class="side-card right"
-        [title]="getPlayerForPosition('right-side')|| ''">
-      </app-card>
+    <ng-container *ngIf="getPlayerByID('right-side')?.rol === 'player'">
+      <app-card class="side-card right" [title]="getPlayerForPosition('right-side') || ''"></app-card>
+    </ng-container>
+    <ng-container *ngIf="getPlayerByID('right-side')?.rol === 'viwer'">
+      <section class="circle-container">
+        <div class="circle">
+          <span class="circle-text">
+            {{ getPlayerByID('right-side')?.name?.slice(0, 2) }}
+          </span>
+        </div>
+        <div class="circle-name">
+          {{ getPlayerByID('right-side')?.name }}
+        </div>
+      </section>
     </ng-container>
   </section>
 
   <footer class="cards-row">
     <ng-container *ngFor="let id of ['bottom-left-1', 'bottom-center', 'bottom-right-1']">
-      <ng-container *ngIf="getPlayerForPosition(id)">
-        <app-card
-          [title]="getPlayerForPosition(id)|| ''">
-        </app-card>
+      <ng-container *ngIf="getPlayerByID(id)?.rol === 'player'">
+        <app-card [title]="getPlayerForPosition(id) || ''"></app-card>
+      </ng-container>
+      <ng-container *ngIf="getPlayerByID(id)?.rol === 'viwer'">
+        <section class="circle-container">
+          <div class="circle">
+            <span class="circle-text">
+              {{ getPlayerByID(id)?.name?.slice(0, 2) }}
+            </span>
+          </div>
+          <div class="circle-name">
+            {{ getPlayerByID(id)?.name }}
+          </div>
+        </section>
       </ng-container>
     </ng-container>
   </footer>

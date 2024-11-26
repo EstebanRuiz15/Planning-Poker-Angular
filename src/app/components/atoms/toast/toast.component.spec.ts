@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ToastComponent } from './toast.component';
-import { ToastService } from '../../../shared/services/toast/toast.service';
+import { ToastService } from 'src/app/shared/services/toast/toast.service';
 import { Subject } from 'rxjs';
 
 describe('ToastComponent', () => {

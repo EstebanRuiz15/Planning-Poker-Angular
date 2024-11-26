@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { of,throwError  } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { RegisterUserComponent } from './register.user.component';
 import { GameService } from '../../../shared/services/functionalyty-service/GameService/game.service.impl';
@@ -9,6 +9,7 @@ import { GameCommunicationService } from 'src/app/shared/services/functionalyty-
 import { InputAtomComponent } from '../../atoms/input/input.component';
 import { ButtonComponent } from '../../atoms/button/button.component';
 import { Game } from 'src/app/shared/interfaces/game.model';
+import { ToastService } from 'src/app/shared/services/toast/toast.service';
 
 
 class MockGameService {
@@ -65,7 +66,7 @@ describe('RegisterUserComponent', () => {
   it('should initialize the form with default values when not players yet', () => {
     expect(component.userForm).toBeDefined();
     expect(component.userForm.get('name')?.value).toBe('');
-    expect(component.userForm.get('role')?.value).toBe('admin');
+    expect(component.userForm.get('role')?.value).toBe('player');
   });
 
   it('should display errors if the name is invalid', fakeAsync(() => {
@@ -79,12 +80,6 @@ describe('RegisterUserComponent', () => {
     expect(component.showErrors).toBe(false);
   }));
 
-  it('should set role to admin if no players exist', () => {
-    const getGameByIdSpy = gameService.getGameById.mockReturnValue(of({} as Game));
-    component.ngOnInit();
-    expect(component.roleControl.value).toBe('admin');
-    expect(getGameByIdSpy).toHaveBeenCalled();
-  });
 
   it('should save a user to storage on form submit', fakeAsync(() => {
     const joinGameSpy = gameService.joinGame.mockReturnValue(of({} as Game));
@@ -130,13 +125,12 @@ describe('RegisterUserComponent', () => {
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/game', 'testGameId']);
   }));
 
-  it('should assign role as spectator if there are players in the game', () => {
+  it('should assign role as player if there are players in the game', () => {
     const getGameByIdSpy = gameService.getGameById.mockReturnValue(of({} as Game));
     component.ngOnInit();
-    expect(component.roleControl.value).toBe('spectator');
+    expect(component.roleControl.value).toBe('player');
     expect(getGameByIdSpy).toHaveBeenCalled();
   });
-
 
   it('should return true if the name field is invalid and touched', () => {
     const nameControl = component.userForm.get('name');
@@ -204,4 +198,71 @@ describe('RegisterUserComponent', () => {
 
     expect(component.showErrors).toBe(false);
   }));
+
+  it('should display error message when name is invalid', () => {
+    const nameControl = component.userForm.get('name');
+    nameControl?.setValue('');
+    nameControl?.markAsTouched();
+    fixture.detectChanges();
+
+    expect(component.isFieldInvalid()).toBe(true);
+    expect(component.getErrorMessage()).toBe('El nombre es requerido');
+  });
+
+  it('should not call handleCreateUser if the form is invalid', () => {
+    const handleCreateUserSpy = jest.spyOn(component, 'handleCreateUser');
+    component.userForm.get('name')?.setValue('');
+
+    fixture.detectChanges();
+    component.onSubmit();
+
+    expect(handleCreateUserSpy).not.toHaveBeenCalled();
+  });
+
+  it('should show "Game is full" toast message if the game is full', fakeAsync(() => {
+    const joinGameSpy = gameService.joinGame.mockReturnValue(throwError(() => ({ message: 'Game is full' })));
+    const toastSpy = jest.spyOn(ToastService.prototype, 'showToast');
+
+    const nameControl = component.userForm.get('name');
+    nameControl?.setValue('ValidName');
+    fixture.detectChanges();
+
+    component.onSubmit();
+    tick();
+
+    expect(joinGameSpy).toHaveBeenCalled();
+    expect(toastSpy).toHaveBeenCalledWith('Partida llena', 'error');
+  }));
+
+  it('should show a generic error toast message if there is an error while joining the game', fakeAsync(() => {
+    const joinGameSpy = gameService.joinGame.mockReturnValue(throwError(() => ({ message: 'Some error' })));
+    const toastSpy = jest.spyOn(ToastService.prototype, 'showToast');
+
+    const nameControl = component.userForm.get('name');
+    nameControl?.setValue('ValidName');
+    fixture.detectChanges();
+
+    component.onSubmit();
+    tick();
+
+    expect(joinGameSpy).toHaveBeenCalled();
+    expect(toastSpy).toHaveBeenCalledWith('Error al unirse al juego', 'error');
+  }));
+
+  it('should assign the default role "player" if there are players in the game', fakeAsync(() => {
+    const mockGame = { id: 'testGameId', players: ['player1', 'player2'] };
+    gameService.getGameById.mockReturnValue(of(mockGame));
+
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(component.roleControl.value).toBe('player');
+  }));
+
+  it('should initialize the form with default values', () => {
+    expect(component.userForm).toBeDefined();
+    expect(component.userForm.get('name')?.value).toBe('');
+    expect(component.userForm.get('role')?.value).toBe('player');
+  });
+
 });

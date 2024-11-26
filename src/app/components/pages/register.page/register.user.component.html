@@ -20,7 +20,7 @@
           </div>
         </div>
 
-        <div class="role-selector" *ngIf="hasPlayers; else noRoleSelector">
+        <div class="role-selector" *ngIf=" noRoleSelector">
           <label class="role-option">
             <input type="radio" formControlName="role" value="player" aria-label="Jugador">
             <span class="custom-radio"></span>
