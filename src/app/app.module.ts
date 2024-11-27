@@ -29,7 +29,8 @@ import { ToastComponent } from './components/atoms/toast/toast.component';
     CreateGameFormComponent,
     CreateGamePage,
     CartComponent,
-    ToastComponent
+    ToastComponent,
+    ButtonComponent
 
   ],
   imports: [

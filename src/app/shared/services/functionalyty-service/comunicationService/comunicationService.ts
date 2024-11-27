@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { User } from 'src/app/shared/interfaces/user.model';
+import { GameService } from '../GameService/game.service.impl';
 
 @Injectable({
   providedIn: 'root'
@@ -9,8 +10,11 @@ export class GameCommunicationService {
   private readonly GAME_PLAYERS_KEY = 'game_table_players';
   private playerSubject = new BehaviorSubject<User | null>(null);
   player$ = this.playerSubject.asObservable();
+  private votesSubject = new BehaviorSubject<{ [userId: string]: number }>({});
+  votes$ = this.votesSubject.asObservable();
 
-  constructor() {
+
+  constructor(private gameService: GameService) {
     const storedPlayer = localStorage.getItem('currentPlayer');
     if (storedPlayer) {
       this.playerSubject.next(JSON.parse(storedPlayer));
@@ -46,4 +50,39 @@ export class GameCommunicationService {
     localStorage.removeItem('currentPlayer');
     this.playerSubject.next(null);
   }
+
+  updateUserVote(playerId: string, gameId: string, vote: number): void {
+    const players = this.getStoredPlayers(gameId);
+    const playerIndex = players.findIndex(p => p.id === playerId);
+    if (playerIndex !== -1) {
+      players[playerIndex].voted = vote;
+      this.savePlayers(gameId, players);
+      if (this.playerSubject.value && this.playerSubject.value.id === playerId) {
+        const updatedPlayer = { ...this.playerSubject.value, voted: vote };
+        localStorage.setItem('currentPlayer', JSON.stringify(updatedPlayer));
+        this.playerSubject.next(updatedPlayer);
+      }
+    }
+  }
+
+  updateVote(gameId: string, userId: string, vote: number) {
+    this.gameService.playerVote(gameId, userId, vote).subscribe(
+      (game) => {
+        // Emitir los votos actualizados
+        this.votesSubject.next(game.votes);
+      },
+      (error) => {
+        console.error('Error updating vote', error);
+      }
+    );
+  }
+
+  loadInitialVotes(gameId: string) {
+    this.gameService.getGameById(gameId).subscribe(
+      (game) => {
+        this.votesSubject.next(game.votes);
+      }
+    );
+  }
+
 }

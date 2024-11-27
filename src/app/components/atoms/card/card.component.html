@@ -1,4 +1,7 @@
 <div class="card-container">
-  <img src="../../../../assets/images/Rectangle 19.png" alt="Card Image" class="card-image">
+  <div class="card-image-wrapper">
+    <img src="../../../../assets/images/Rectangle 19.png" alt="Card Image" class="card-image">
+    <div class="image-overlay" [style.backgroundColor]="overlay || 'transparent'"></div>
+  </div>
   <div class="card-title">{{ title }}</div>
 </div>

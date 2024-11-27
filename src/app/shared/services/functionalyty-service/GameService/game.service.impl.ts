@@ -38,6 +38,7 @@ export class GameService {
 
     if (game.players.length === 0) {
       user.admin = true;
+
     }
 
     if (game.players.some(p => p.id === user.id)) {
@@ -104,5 +105,53 @@ export class GameService {
     } else {
       return throwError(() => new Error(GAME_NOT_FOUND));
     }
+  }
+
+  playerVote(gameId: string, userId: string, vote: number): Observable<Game> {
+    const game = this.games.find(g => g.id === gameId);
+    if (!game) {
+      return throwError(() => new Error(GAME_NOT_FOUND));
+    }
+    game.votes[userId] = vote;
+
+    const votedPlayers = Object.keys(game.votes).length;
+    const totalPlayers = game.players.filter(p => p.rol === RolUsuario.PLAYER).length;
+
+    if (votedPlayers === totalPlayers) {
+      game.state = 'voted';
+    }
+
+    this.saveGamesToStorage();
+    return of(game);
+  }
+
+  revealVotes(gameId: string): Observable<Game> {
+    const game = this.games.find(g => g.id === gameId);
+    if (!game) {
+      return throwError(() => new Error(GAME_NOT_FOUND));
+    }
+
+    game.state = 'completed';
+    this.saveGamesToStorage();
+    return of(game);
+  }
+  getCurrentUser(gameId: string, userName: string): User | undefined {
+    const game = this.games.find(g => g.id === gameId);
+    return game?.players.find(p => p.name === userName);
+  }
+
+  getGamePlayerCount(gameId: string, rol: RolUsuario): number {
+    this.loadGamesFromStorage();
+    const game = this.games.find(g => g.id === gameId);
+    if (!game) {
+      return 0
+    }
+    return game.players.filter(p => p.rol === rol).length;
+  }
+
+  isAdminUser(gameId: string, userName: string): boolean {
+    const game = this.games.find(g => g.id === gameId);
+    const currentUser = game?.players.find(p => p.name === userName);
+    return currentUser?.admin || false;
   }
 }

@@ -9,10 +9,29 @@
   border: 1px solid #BB65FF;
   opacity: 1;
   box-sizing: border-box;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+  &.voted {
+    background-color: rgba(219, 96, 213, 0.788);
+    border-color: #5510d4;
+    margin-bottom: 1rem;
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(153, 117, 236, 0.699);
+  }
+  &.disabled {
+    cursor: not-allowed;
+  }
 }
 
 .number {
   color: white;
   font-size: 2rem;
   font-weight: bold;
+  .cart.voted & {
+    color: #380f85;
+  }
 }
