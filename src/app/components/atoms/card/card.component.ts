@@ -7,7 +7,8 @@ import { Component, OnInit, Input } from '@angular/core';
 })
 export class CardComponent implements OnInit {
   @Input() title: string = '';
-
+  @Input() overlay: string | null = null;
+  @Input() voted: number | null = null;
   constructor() { }
 
   ngOnInit(): void {

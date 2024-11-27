@@ -5,9 +5,26 @@
   text-align: center;
 }
 
+.card-image-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
 .card-image {
   max-width: 90%;
   height: auto;
+  display: block;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 7%;
+  left: 16%;
+  width: 58%;
+  height: 73%;
+  border-radius: 20%;
+  pointer-events: none;
+  opacity: 0.7;
 }
 
 .card-title {
