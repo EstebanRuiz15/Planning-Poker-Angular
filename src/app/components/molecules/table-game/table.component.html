@@ -1,7 +1,10 @@
 <article class="table-container">
   <header class="cards-row">
     <ng-container *ngIf="getPlayerByID('side-top-left')?.rol === 'player'">
-      <app-card [title]="getPlayerForPosition('side-top-left') || ''"></app-card>
+      <app-card
+         [title]="getPlayerForPosition('side-top-left') || ''"
+         [overlay]="getPlayerCardOverlay('side-top-left')">
+      </app-card>
     </ng-container>
     <ng-container *ngIf="getPlayerByID('side-top-left')?.rol === 'viwer'">
       <section class="circle-container">
@@ -29,11 +32,17 @@
       </section>
     </ng-container>
     <ng-container *ngIf="getPlayerByID('center')?.rol === 'player'">
-      <app-card [title]="getPlayerForPosition('center') || ''"></app-card>
+      <app-card
+        [title]="getPlayerForPosition('center') || ''"
+        [overlay]="getPlayerCardOverlay('center')">
+      </app-card>
     </ng-container>
 
     <ng-container *ngIf="getPlayerByID('side-top-right')?.rol === 'player'">
-      <app-card [title]="getPlayerForPosition('side-top-right') || ''"></app-card>
+      <app-card
+        [title]="getPlayerForPosition('side-top-right') || ''"
+        [overlay]="getPlayerCardOverlay('side-top-right')">
+     </app-card>
     </ng-container>
     <ng-container *ngIf="getPlayerByID('side-top-right')?.rol === 'viwer'">
       <section class="circle-container">
@@ -51,7 +60,10 @@
 
   <section class="table-row-wrapper">
     <ng-container *ngIf="getPlayerByID('left-side')?.rol === 'player'">
-      <app-card class="side-card left" [title]="getPlayerForPosition('left-side') || ''"></app-card>
+      <app-card class="side-card left"
+        [title]="getPlayerForPosition('left-side') || ''"
+        [overlay]="getPlayerCardOverlay('left-side')">
+     </app-card>
     </ng-container>
     <ng-container *ngIf="getPlayerByID('left-side')?.rol === 'viwer'">
       <section class="circle-container">
@@ -73,7 +85,10 @@
     </div>
 
     <ng-container *ngIf="getPlayerByID('right-side')?.rol === 'player'">
-      <app-card class="side-card right" [title]="getPlayerForPosition('right-side') || ''"></app-card>
+      <app-card class="side-card right"
+        [title]="getPlayerForPosition('right-side') || ''"
+        [overlay]="getPlayerCardOverlay('right-side')">
+     </app-card>
     </ng-container>
     <ng-container *ngIf="getPlayerByID('right-side')?.rol === 'viwer'">
       <section class="circle-container">
@@ -92,7 +107,10 @@
   <footer class="cards-row">
     <ng-container *ngFor="let id of ['bottom-left-1', 'bottom-center', 'bottom-right-1']">
       <ng-container *ngIf="getPlayerByID(id)?.rol === 'player'">
-        <app-card [title]="getPlayerForPosition(id) || ''"></app-card>
+        <app-card
+          [title]="getPlayerForPosition(id) || ''"
+          [overlay]="getPlayerCardOverlay(id)">
+       </app-card>
       </ng-container>
       <ng-container *ngIf="getPlayerByID(id)?.rol === 'viwer'">
         <section class="circle-container">

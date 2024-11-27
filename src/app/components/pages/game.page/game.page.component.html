@@ -12,12 +12,46 @@
   </header>
 
   <section class="table-container">
-    <app-table-game></app-table-game>
+    <app-table-game
+      #tableGame
+      [votedCards]="gameState === 'completed' ? gameVotes : {}"
+      [currentUserVote]="getCurrentUserVote()"
+    ></app-table-game>
   </section>
 
   <section class="cart-container">
-    <app-cart *ngFor="let number of fibonacciNumbers" [number]="number"></app-cart>
-    <app-cart [number]="'?'"></app-cart>
-    <app-cart [number]="'☕'"></app-cart>
+    <ng-container *ngIf="gameState !== 'completed'">
+      <app-cart
+        *ngFor="let number of fibonacciNumbers"
+        [number]="number"
+        [isVoted]="getCurrentUserVote().vote === number"
+        (cardSelected)="vote(number)"
+        [disabled]="!isPlayerRole()"
+      ></app-cart>
+      <app-cart
+        [number]="'?'"
+      ></app-cart>
+      <app-cart
+        [number]="'☕'"
+      ></app-cart>
+    </ng-container>
+
+    <ng-container *ngIf="gameState === 'completed'">
+      <ng-container *ngFor="let votedNumber of objectKeys(gameVotes)">
+        <app-cart
+          [number]="gameVotes[votedNumber]"
+          [votes]="getVotesForNumber(gameVotes[votedNumber])"
+        ></app-cart>
+      </ng-container>
+    </ng-container>
   </section>
+
+  <div *ngIf="isAdminChecked && isAdmin" class="buton-cont">
+    <app-button
+      [disabled]="!canRevealVotes()"
+      (onClick)="revealVotes()"
+    >
+      Revelar Cartas
+    </app-button>
+  </div>
 </main>

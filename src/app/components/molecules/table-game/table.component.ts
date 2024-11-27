@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
-import { RolUsuario, User } from '../../../shared/interfaces/user.model';
+import { Component, OnInit, OnDestroy, NgZone, Input } from '@angular/core';
+import { User } from '../../../shared/interfaces/user.model';
 import { GameCommunicationService } from 'src/app/shared/services/functionalyty-service/comunicationService/comunicationService';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription, fromEvent } from 'rxjs';
@@ -10,10 +10,11 @@ import { Subscription, fromEvent } from 'rxjs';
   styleUrls: ['./table.component.scss']
 })
 export class TableGameComponent implements OnInit, OnDestroy {
+  @Input() votedCards: { [userId: string]: number } = {};
+  @Input() currentUserVote: { vote: number | null, id: string | null }= { vote: null, id: null };
   private readonly TABLE_STATE_KEY = 'game_table_state';
   private gameId: string | null = null;
   private subscriptions: Subscription = new Subscription();
-  private storageEventSubscription: Subscription | null = null;
 
   players: {
     id: string;
@@ -21,6 +22,7 @@ export class TableGameComponent implements OnInit, OnDestroy {
     assigned: boolean;
     rol?: string;
     order: number;
+    userId?:string
   }[] = [
     { id: 'center', name: '', assigned: false, rol: '', order: 1 },
     { id: 'bottom-center', name: '', assigned: false, rol: '', order: 2 },
@@ -36,7 +38,9 @@ export class TableGameComponent implements OnInit, OnDestroy {
     private gameCommunicationService: GameCommunicationService,
     private route: ActivatedRoute,
     private ngZone: NgZone
-  ) { }
+  ) {
+
+   }
 
   ngOnInit(): void {
     this.gameId = this.route.snapshot.paramMap.get('gameId');
@@ -60,26 +64,13 @@ export class TableGameComponent implements OnInit, OnDestroy {
   }
 
   private setupStorageListener(): void {
-
-    this.storageEventSubscription = fromEvent(window, 'storage')
-      .subscribe((event: any) => {
+    this.subscriptions.add(
+      fromEvent(window, 'storage').subscribe((event: any) => {
         if (event.key === `${this.TABLE_STATE_KEY}_${this.gameId}`) {
           this.ngZone.run(() => {
             this.loadTableState();
           });
         }
-      });
-
-
-    const pollInterval = setInterval(() => {
-      this.ngZone.run(() => {
-        this.loadTableState();
-      });
-    }, 2000);
-
-    this.subscriptions.add(
-      new Subscription(() => {
-        clearInterval(pollInterval);
       })
     );
   }
@@ -89,7 +80,6 @@ export class TableGameComponent implements OnInit, OnDestroy {
       this.gameCommunicationService.player$.subscribe(player => {
         if (player && !this.isPlayerAssigned(player)) {
           this.assignPlayer(player);
-
           this.notifyPlayersUpdate();
         }
       })
@@ -97,15 +87,11 @@ export class TableGameComponent implements OnInit, OnDestroy {
   }
 
   private notifyPlayersUpdate(): void {
-
     localStorage.setItem('last_update_' + this.gameId, Date.now().toString());
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
-    if (this.storageEventSubscription) {
-      this.storageEventSubscription.unsubscribe();
-    }
   }
 
   private resetPlayers(): void {
@@ -114,6 +100,29 @@ export class TableGameComponent implements OnInit, OnDestroy {
       player.assigned = false;
       player.rol = '';
     });
+  }
+
+  getPlayerCardOverlay(playerId: string): string | null {
+
+    const player = this.getPlayerByID(playerId);
+
+    if (!player) return null;
+    if (this.currentUserVote.vote !== null && this.currentUserVote.id == player.userId) {
+      return 'rgba(219, 96, 213, 0.788)';
+    }
+
+    return null;
+  }
+
+  getPlayerCardText(playerId: string): string | null {
+    const player = this.getPlayerByID(playerId);
+    if (!player) return null;
+
+    if (this.votedCards && Object.keys(this.votedCards).length > 0) {
+      return this.votedCards[player.id]?.toString() || null;
+    }
+
+    return null;
   }
 
   private loadTableState(): void {
@@ -133,7 +142,6 @@ export class TableGameComponent implements OnInit, OnDestroy {
     if (!this.gameId) return;
     localStorage.setItem(`${this.TABLE_STATE_KEY}_${this.gameId}`, JSON.stringify(this.players));
     this.notifyPlayersUpdate();
-    console.log('Table state saved:', this.players);
   }
 
   private isPlayerAssigned(user: User): boolean {
@@ -144,7 +152,6 @@ export class TableGameComponent implements OnInit, OnDestroy {
   }
 
   assignPlayer(user: User) {
-    console.log('Player already assigned:', user)
     if (this.isPlayerAssigned(user)) {
       return;
     }
@@ -157,15 +164,9 @@ export class TableGameComponent implements OnInit, OnDestroy {
       unassignedPlayer.name = user.name;
       unassignedPlayer.assigned = true;
       unassignedPlayer.rol = user.rol;
-      console.log('Player assigned to position:', unassignedPlayer);
+      unassignedPlayer.userId=user.id;
       this.saveTableState();
     }
-  }
-
-  getAssignedPlayers(): {id: string, name: string}[] {
-    return this.players
-      .filter(player => player.assigned)
-      .map(player => ({ id: player.id, name: player.name }));
   }
 
   getPlayerForPosition(id: string): string | null {
@@ -175,5 +176,11 @@ export class TableGameComponent implements OnInit, OnDestroy {
 
   getPlayerByID(id: string) {
     return this.players.find(player => player.id === id);
+  }
+
+  getAssignedPlayers(): {id: string, name: string}[] {
+    return this.players
+      .filter(player => player.assigned)
+      .map(player => ({ id: player.id, name: player.name }));
   }
 }
