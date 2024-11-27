@@ -32,8 +32,12 @@ export class GameService {
       return throwError(() => new Error(GAME_NOT_FOUND));
     }
 
+    if (game.players.length >= 8) {
+      return throwError(() => new Error('Game is full'));
+    }
+
     if (game.players.length === 0) {
-      user.rol = RolUsuario.ADMIN;
+      user.admin = true;
     }
 
     if (game.players.some(p => p.id === user.id)) {
