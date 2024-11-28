@@ -3,8 +3,7 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { RolUsuario, User } from 'src/app/shared/interfaces/user.model';
 import { GameCommunicationService } from 'src/app/shared/services/functionalyty-service/comunicationService/comunicationService';
-import { catchError, map, Observable, of, Subscription } from 'rxjs';
-import { TableGameComponent } from '../../molecules/table-game/table.component';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-game-page',
