@@ -1,5 +1,6 @@
+import { Game } from './../../../interfaces/game.model';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, filter, fromEvent, map, Observable, Subject } from 'rxjs';
 import { User } from 'src/app/shared/interfaces/user.model';
 import { GameService } from '../GameService/game.service.impl';
 
@@ -10,8 +11,21 @@ export class GameCommunicationService {
   private readonly GAME_PLAYERS_KEY = 'game_table_players';
   private playerSubject = new BehaviorSubject<User | null>(null);
   player$ = this.playerSubject.asObservable();
-  private votesSubject = new BehaviorSubject<{ [userId: string]: number }>({});
-  votes$ = this.votesSubject.asObservable();
+  private playerColorChangeSubject = new Subject<{ playerId: string, color: string }>();
+  playerColorChange$ = this.playerColorChangeSubject.asObservable();
+  private playerVoteChangeSubject = new Subject<{ playerId: string, vote: number }>();
+  playerVoteChange$ = this.playerVoteChangeSubject.asObservable();
+  private gameStateSubject = new BehaviorSubject<'waiting' | 'voted' | 'completed'>('waiting');
+  private gameCompleteSubject = new BehaviorSubject<{ gameId: string, isComplete: boolean }>({
+    gameId: '',
+    isComplete: false
+  });
+  gameComplete$ = this.gameCompleteSubject.asObservable();
+  gameState$ = this.gameStateSubject.asObservable();
+  private gameVotesSubject = new BehaviorSubject<{ [userId: string]: number }>({});
+  gameVotes$ = this.gameVotesSubject.asObservable();
+  private clearOverlaysSubject = new Subject<void>();
+  clearOverlays$ = this.clearOverlaysSubject.asObservable();
 
 
   constructor(private gameService: GameService) {
@@ -65,24 +79,46 @@ export class GameCommunicationService {
     }
   }
 
-  updateVote(gameId: string, userId: string, vote: number) {
-    this.gameService.playerVote(gameId, userId, vote).subscribe(
-      (game) => {
-        // Emitir los votos actualizados
-        this.votesSubject.next(game.votes);
-      },
-      (error) => {
-        console.error('Error updating vote', error);
-      }
-    );
+  notifyPlayerColorChange(playerId: string, color: string, vote: number) {
+    this.playerColorChangeSubject.next({ playerId, color });
+    this.playerVoteChangeSubject.next({ playerId, vote });
+  }
+  notifyClearOverlays(): void {
+    this.clearOverlaysSubject.next();
+  }
+  updateGameState(state: 'waiting' | 'voted' | 'completed') {
+    console.log("state in service ", state)
+    this.gameStateSubject.next(state);
   }
 
-  loadInitialVotes(gameId: string) {
-    this.gameService.getGameById(gameId).subscribe(
-      (game) => {
-        this.votesSubject.next(game.votes);
-      }
-    );
+  updateGameCompletedStatus(gameId: string | null, isComplete: boolean){
+    if (gameId) {
+      localStorage.setItem(`game_complete_${gameId}`, JSON.stringify({
+        gameId,
+        isComplete,
+        timestamp: Date.now()
+      }));
+    }
   }
+
+  updateGameVotes(gameId: string, votes: { [userId: string]: number }) {
+    localStorage.setItem(`game_votes_${gameId}`, JSON.stringify({
+      votes: votes,
+      timestamp: Date.now()
+    }));
+
+    this.gameVotesSubject.next(votes);
+  }
+
+  getLatestGameVotes(gameId: string|null): { [userId: string]: number } {
+    const gameVotesStr = localStorage.getItem(`game_votes_${gameId}`);
+    if (gameVotesStr) {
+      const gameVotesData = JSON.parse(gameVotesStr);
+      return gameVotesData.votes || {};
+    }
+    return {};
+  }
+
+
 
 }

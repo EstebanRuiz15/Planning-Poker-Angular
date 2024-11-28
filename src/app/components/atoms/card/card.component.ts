@@ -13,4 +13,7 @@ export class CardComponent implements OnInit {
 
   ngOnInit(): void {
   }
+  getOverlayStyle(): { [klass: string]: any } {
+    return this.overlay ? { 'background-color': this.overlay } : {};
+  }
 }

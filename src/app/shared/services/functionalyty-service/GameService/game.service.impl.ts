@@ -154,4 +154,7 @@ export class GameService {
     const currentUser = game?.players.find(p => p.name === userName);
     return currentUser?.admin || false;
   }
+
+
+
 }
