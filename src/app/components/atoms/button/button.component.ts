@@ -8,12 +8,14 @@ export class ButtonComponent {
   @Input() type: 'button' | 'submit' = 'button';
   @Input() disabled = false;
   @Input() customClass: string = '';
+  @Input() revealt=false;
   @Output() onClick = new EventEmitter<void>();
 
   get buttonClasses() {
     return {
       'custom-button': true,
-      [`${this.customClass}`]: !!this.customClass
+      [`${this.customClass}`]: !!this.customClass,
+      'revealt-class': this.revealt
     };
   }
 

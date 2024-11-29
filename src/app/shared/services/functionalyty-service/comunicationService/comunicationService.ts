@@ -1,34 +1,28 @@
-import { Game } from './../../../interfaces/game.model';
+
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, filter, fromEvent, map, Observable, Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { User } from 'src/app/shared/interfaces/user.model';
-import { GameService } from '../GameService/game.service.impl';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameCommunicationService {
   private readonly GAME_PLAYERS_KEY = 'game_table_players';
-  private playerSubject = new BehaviorSubject<User | null>(null);
+  readonly playerSubject = new BehaviorSubject<User | null>(null);
   player$ = this.playerSubject.asObservable();
-  private playerColorChangeSubject = new Subject<{ playerId: string, color: string }>();
+  readonly playerColorChangeSubject = new Subject<{ playerId: string, color: string }>();
   playerColorChange$ = this.playerColorChangeSubject.asObservable();
-  private playerVoteChangeSubject = new Subject<{ playerId: string, vote: number }>();
+  readonly playerVoteChangeSubject = new Subject<{ playerId: string, vote: number }>();
   playerVoteChange$ = this.playerVoteChangeSubject.asObservable();
-  private gameStateSubject = new BehaviorSubject<'waiting' | 'voted' | 'completed'>('waiting');
-  private gameCompleteSubject = new BehaviorSubject<{ gameId: string, isComplete: boolean }>({
-    gameId: '',
-    isComplete: false
-  });
-  gameComplete$ = this.gameCompleteSubject.asObservable();
+  readonly gameStateSubject = new BehaviorSubject<'waiting' | 'voted' | 'completed'>('waiting');
   gameState$ = this.gameStateSubject.asObservable();
-  private gameVotesSubject = new BehaviorSubject<{ [userId: string]: number }>({});
+  readonly gameVotesSubject = new BehaviorSubject<{ [userId: string]: number }>({});
   gameVotes$ = this.gameVotesSubject.asObservable();
-  private clearOverlaysSubject = new Subject<void>();
+  readonly clearOverlaysSubject = new Subject<void>();
   clearOverlays$ = this.clearOverlaysSubject.asObservable();
 
 
-  constructor(private gameService: GameService) {
+  constructor() {
     const storedPlayer = localStorage.getItem('currentPlayer');
     if (storedPlayer) {
       this.playerSubject.next(JSON.parse(storedPlayer));
@@ -85,10 +79,6 @@ export class GameCommunicationService {
   }
   notifyClearOverlays(): void {
     this.clearOverlaysSubject.next();
-  }
-  updateGameState(state: 'waiting' | 'voted' | 'completed') {
-    console.log("state in service ", state)
-    this.gameStateSubject.next(state);
   }
 
   updateGameCompletedStatus(gameId: string | null, isComplete: boolean){

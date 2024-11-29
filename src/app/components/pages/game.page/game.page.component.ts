@@ -3,7 +3,9 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { RolUsuario, User } from 'src/app/shared/interfaces/user.model';
 import { GameCommunicationService } from 'src/app/shared/services/functionalyty-service/comunicationService/comunicationService';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
+import { ToastService } from 'src/app/shared/services/toast/toast.service';
+import { SERVICE_ERROR } from 'src/app/shared/Constants';
 
 @Component({
   selector: 'app-game-page',
@@ -19,7 +21,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
   isAdmin = false;
   isGameComplete:boolean=false;
   currentUserVote: number | null = null;
-  player$ = this.gameCommunicationService.player$;
+  player$: Observable<User | null>;
   users: User[] = [];
   revealedCards: { [userId: string]: number } = {};
   fibonacciNumbers: number[] = this.generateFibonacciUpTo89();
@@ -27,11 +29,14 @@ export class GamePageComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription = new Subscription();
 
   constructor(
-    private route: ActivatedRoute,
-    private gameService: GameService,
-    private gameCommunicationService: GameCommunicationService,
-    private changeDetectorRef:ChangeDetectorRef
-  ) {}
+    readonly route: ActivatedRoute,
+    readonly gameService: GameService,
+    readonly gameCommunicationService: GameCommunicationService,
+    readonly changeDetectorRef:ChangeDetectorRef,
+    readonly toastService: ToastService
+  ) {
+    this.player$ = this.gameCommunicationService.player$;
+  }
 
   ngOnInit(): void {
     window.addEventListener('storage', (event) => {
@@ -41,7 +46,6 @@ export class GamePageComponent implements OnInit, OnDestroy {
           this.isGameComplete = gameCompleteData.isComplete;
           this.gameVotes= this.gameCommunicationService.getLatestGameVotes(this.gameId);
           this.gameCommunicationService.notifyClearOverlays();
-          console.log("estos son los votos y estado: ",this.gameVotes, this.isGameComplete)
           this.changeDetectorRef.detectChanges();
         }
       }
@@ -55,21 +59,10 @@ export class GamePageComponent implements OnInit, OnDestroy {
             next: (game) => {
               this.gameName = game.name;
               this.gameState = game.state;
-              this.gameVotes = game.votes;
+              this.gameVotes = game.votes || {};
               this.checkAdminStatus();
-            },
-            error: (err) => {
-              this.gameName = null;
             }
           });
-        }
-      })
-    );
-
-    this.subscriptions.add(
-      this.gameCommunicationService.gameComplete$.subscribe(status => {
-        if (status.gameId === this.gameId) {
-          this.isGameComplete = status.isComplete;
         }
       })
     );
@@ -81,7 +74,6 @@ export class GamePageComponent implements OnInit, OnDestroy {
 
   checkAdminStatus(): void {
     this.userName = this.gameService.AuthService();
-    console.log('game current ', this.gameId, this.userName);
     if (this.gameId && this.userName) {
       this.isAdmin = this.gameService.isAdminUser(this.gameId, this.userName);
     }
@@ -94,17 +86,13 @@ export class GamePageComponent implements OnInit, OnDestroy {
   }
 
   vote(vote: number): void {
-    console.log(`User ${this.userName} is voting with value ${vote}`);
     if (this.currentUserVote !== null) {
-      console.log('User has already voted and cannot vote again.');
       return;
     }
     if (this.gameId && this.userName) {
       const currentUser = this.gameService.getCurrentUser(this.gameId, this.userName);
 
       if (currentUser && currentUser.rol === RolUsuario.PLAYER) {
-        console.log(`Current user found: ${currentUser.id}`);
-
         this.subscriptions.add(
           this.gameService.playerVote(this.gameId, currentUser.id, vote).subscribe({
             next: (game) => {
@@ -113,18 +101,14 @@ export class GamePageComponent implements OnInit, OnDestroy {
               this.gameState = game.state;
               if(this.gameId)
             this.gameCommunicationService.updateGameVotes(this.gameId, game.votes);
-
-              console.log(`Vote recorded for user ${currentUser.id}: ${vote}`);
-              console.log(`Updated game votes:`, this.gameVotes);
               this.onCardSelected(currentUser.id, this.gameId!, vote);
             },
             error: (err) => {
-              console.error(`Error recording vote for user ${currentUser.id}:`, err);
+              this.toastService.showToast(SERVICE_ERROR,"error");
+
             }
           })
         );
-      } else {
-        console.log('User does not have player role and cannot vote');
       }
     }
   }
@@ -138,18 +122,15 @@ export class GamePageComponent implements OnInit, OnDestroy {
   }
 
   onCardSelected(playerId: string, gameId: string, vote: number): void {
-    console.log(`onCardSelected called with playerId: ${playerId}, gameId: ${gameId}, vote: ${vote}`);
     this.gameCommunicationService.updateUserVote(playerId, gameId, vote);
     this.users = this.gameCommunicationService.getStoredPlayers(gameId);
-    console.log(`Updated users after card selection:`, this.users);
   }
 
   canRevealVotes(): boolean {
     if (!this.gameId) return false;
 
     const playerCount = this.gameService.getGamePlayerCount(this.gameId, RolUsuario.PLAYER);
-    const votedCount = Object.keys(this.gameVotes).length;
-    console.log(`disable button revelar`, playerCount, votedCount, "game vote ", this.gameVotes, "get game player count ", this.gameService.getGamePlayerCount(this.gameId, RolUsuario.PLAYER));
+    const votedCount = this.gameVotes ? Object.keys(this.gameVotes).length : 0;
 
     return playerCount === votedCount && this.gameState === 'voted';
   }
@@ -166,7 +147,6 @@ export class GamePageComponent implements OnInit, OnDestroy {
             if(this.gameId)
             this.gameCommunicationService.updateGameCompletedStatus(this.gameId, true);
             this.gameCommunicationService.notifyClearOverlays();
-            console.log("this is mi game: ", game)
           }
         })
       );
@@ -179,6 +159,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
       const invitationLink = `${baseUrl}/register/${this.gameName}/${this.gameId}`;
       navigator.clipboard.writeText(invitationLink).then(() => {
       }).catch(err => {
+        this.toastService.showToast(SERVICE_ERROR,"error")
       });
     }
   }
@@ -187,16 +168,13 @@ export class GamePageComponent implements OnInit, OnDestroy {
     return Object.values(this.gameVotes).filter(v => v === vote).length;
   }
 
-  getCurrentUserVote(): { vote: number | null, id: string | null } {
-    if (!this.userName) return { vote: null, id: null };
-
-    const currentUser = this.gameService.getCurrentUser(this.gameId!, this.userName);
-    if (currentUser) {
+  getCurrentUserVote(): { vote: number | null; id: string } {
+    const currentUser = this.gameService.getCurrentUser(this.gameId!, this.userName!);
+    if (currentUser && this.gameVotes) {
       const vote = this.gameVotes[currentUser.id];
       return { vote: vote !== undefined ? vote : null, id: currentUser.id };
     }
-
-    return { vote: null, id: null };
+    return { vote: null, id: '' };
   }
 
   generateFibonacciUpTo89(): number[] {

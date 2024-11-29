@@ -11,7 +11,6 @@ import { GameService } from 'src/app/shared/services/functionalyty-service/GameS
   styleUrls: ['./table.component.scss']
 })
 export class TableGameComponent implements OnInit, OnDestroy {
-  @Input() votedCards: { [userId: string]: number } = {};
   @Input() currentUserVote: { vote: number | null, id: string | null }= { vote: null, id: null };
   private readonly TABLE_STATE_KEY = 'game_table_state';
   private gameId: string | null = null;
@@ -39,11 +38,11 @@ export class TableGameComponent implements OnInit, OnDestroy {
   ];
 
   constructor(
-    private gameCommunicationService: GameCommunicationService,
-    private route: ActivatedRoute,
-    private ngZone: NgZone,
-    private changeDetectorRef: ChangeDetectorRef,
-    private gameService :GameService
+    readonly gameCommunicationService: GameCommunicationService,
+    readonly route: ActivatedRoute,
+    readonly ngZone: NgZone,
+    readonly changeDetectorRef: ChangeDetectorRef,
+    readonly gameService :GameService
   ) {
 
    }
@@ -103,9 +102,6 @@ export class TableGameComponent implements OnInit, OnDestroy {
     );
   }
 
-  updateVotedPlayer(playerId: string): void {
-    console.log(`${playerId} ha votado!`);
-  }
 
   private setupStorageListener(): void {
     this.subscriptions.add(
@@ -149,7 +145,6 @@ export class TableGameComponent implements OnInit, OnDestroy {
     const player = this.getPlayerByID(playerId);
 
     if (!player) {
-      console.log(`Player with ID ${playerId} not found.`);
       return { overlay: null, vote: null };
     }
 
@@ -163,27 +158,12 @@ export class TableGameComponent implements OnInit, OnDestroy {
     if (this.currentUserVote.vote !== null && this.currentUserVote.id == player.userId && !this.gameCompl) {
       const color = 'rgba(219, 96, 213, 0.788)';
       if (player.overlay !== color) {
-        console.log(`Notifying color change for player ${playerId}. New color: ${color}`);
         this.gameCommunicationService.notifyPlayerColorChange(player.id, color, this.currentUserVote.vote);
       }
       return { overlay: color, vote: this.currentUserVote.vote };
     }
-
-    console.log(`No vote found for player ${playerId}. Returning existing overlay: ${player.overlay}`);
     return { overlay: player.overlay || null, vote: player.vote || null };
   }
-
-  getPlayerCardText(playerId: string): string | null {
-    const player = this.getPlayerByID(playerId);
-    if (!player) return null;
-
-    if (this.votedCards && Object.keys(this.votedCards).length > 0) {
-      return this.votedCards[player.id]?.toString() || null;
-    }
-
-    return null;
-  }
-
 
 
   private loadTableState(): void {

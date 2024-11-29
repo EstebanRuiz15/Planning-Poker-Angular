@@ -6,3 +6,4 @@ export const NAME_MAX_3_NUMBERS='No puede contener más de 3 números';
 export const NAME_CANNOT_ONLY_NUMBERS='No puede contener solo números';
 export const NAME_LENGHT='El nombre debe tener entre 5 y 20 caracteres';
 export const GAME_NOT_FOUND='Game not found';
+export const SERVICE_ERROR="Error in the service";

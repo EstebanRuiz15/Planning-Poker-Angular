@@ -16,7 +16,6 @@ import { CreateGameFormComponent } from './components/molecules/create-game-form
 import { CreateGamePage } from './components/pages/create-game/create-game.component';
 import { CartComponent } from './components/atoms/cart/cart.component';
 import { ToastComponent } from './components/atoms/toast/toast.component';
-import { MatIconModule } from '@angular/material/icon';
 
 @NgModule({
   declarations: [
@@ -42,8 +41,7 @@ import { MatIconModule } from '@angular/material/icon';
     FontAwesomeModule,
     FormsModule,
     RouterModule,
-    ReactiveFormsModule,
-    MatIconModule
+    ReactiveFormsModule
 
   ],
   providers: [],

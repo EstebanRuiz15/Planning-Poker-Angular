@@ -84,8 +84,8 @@ app-cart {
 
 .buton-cont {
   position: absolute;
-  top: 5rem;
-  left: 20%;
+  top: 42%;
+  left: 44.5%;
   z-index: 10;
   width: auto;
 
@@ -121,27 +121,12 @@ app-cart {
   margin-top: 0;
 }
 
-.restart-button-container {
+.restar-cont {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 20; /* Asegúrate de que el botón esté por encima de otros elementos */
-  text-align: center;
+  top: 42%;
+  left: 44%;
+  z-index: 10;
+  width: auto;
 }
 
-.restart-button-container app-button {
-  background-color: #ff5e5e; /* Color personalizado para el botón */
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: 20px;
-  font-size: 1.2em;
-}
 
-.restart-button-container app-button:hover {
-  background-color: #e64a4a; /* Color de hover */
-}
-
-mat-icon {
-  margin-right: 8px; /* Ajusta el espacio entre el ícono y el texto */
-}

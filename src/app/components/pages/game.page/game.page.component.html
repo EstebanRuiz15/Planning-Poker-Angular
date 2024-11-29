@@ -14,7 +14,6 @@
   <section class="table-container">
     <app-table-game
       #tableGame
-      [votedCards]="gameState === 'completed' ? gameVotes : {}"
       [currentUserVote]="getCurrentUserVote()"
     ></app-table-game>
   </section>
@@ -56,13 +55,18 @@
     <app-button
       [disabled]="!canRevealVotes()"
       (onClick)="revealVotes()"
+      [revealt]="true"
     >
       Revelar Cartas
     </app-button>
   </div>
-  <div *ngIf="isGameComplete && isAdmin" class="restart-button-container">
-    <app-button (onClick)="restartGame()" [disabled]="isGameComplete">
-      <mat-icon>replay</mat-icon> Reiniciar
+  <div *ngIf=" isAdmin && isGameComplete" class="restar-cont">
+    <app-button
+      [disabled]="false"
+      (onClick)="revealVotes()"
+      [revealt]="true"
+    >
+      Nueva votación
     </app-button>
   </div>
 </main>
