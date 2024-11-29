@@ -1,6 +1,7 @@
+import { throwError,Observable, of } from 'rxjs';
+import { Game } from 'src/app/shared/interfaces/game.model';
 import { Injectable } from "@angular/core";
-import { Observable, of, throwError } from "rxjs";
-import { CreateGameRequest, Game } from "src/app/shared/interfaces/game.model";
+import { CreateGameRequest } from 'src/app/shared/interfaces/game.model';
 import { RolUsuario, User } from "src/app/shared/interfaces/user.model";
 import { GAME_NOT_FOUND } from "src/app/shared/Constants";
 
@@ -65,16 +66,6 @@ export class GameService {
     return of(game);
   }
 
-  getResults(gameId: string): Observable<number> {
-    const game = this.games.find(g => g.id === gameId);
-    if (!game) {
-      return throwError(() => new Error(GAME_NOT_FOUND));
-    }
-
-    const totalVotes = Object.values(game.votes).reduce((acc, vote) => acc + vote, 0);
-    const averageVote = totalVotes / Object.values(game.votes).length;
-    return of(averageVote);
-  }
 
   createGame(request: CreateGameRequest): Observable<Game> {
     const newGame: Game = {
@@ -135,6 +126,7 @@ export class GameService {
     this.saveGamesToStorage();
     return of(game);
   }
+
   getCurrentUser(gameId: string, userName: string): User | undefined {
     const game = this.games.find(g => g.id === gameId);
     return game?.players.find(p => p.name === userName);
@@ -154,4 +146,7 @@ export class GameService {
     const currentUser = game?.players.find(p => p.name === userName);
     return currentUser?.admin || false;
   }
+
+
+
 }

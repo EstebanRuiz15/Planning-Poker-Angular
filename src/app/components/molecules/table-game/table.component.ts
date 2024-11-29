@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy, NgZone, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, Input, ChangeDetectorRef } from '@angular/core';
 import { User } from '../../../shared/interfaces/user.model';
 import { GameCommunicationService } from 'src/app/shared/services/functionalyty-service/comunicationService/comunicationService';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription, fromEvent } from 'rxjs';
+import { GameService } from 'src/app/shared/services/functionalyty-service/GameService/game.service.impl';
 
 @Component({
   selector: 'app-table-game',
@@ -10,11 +11,11 @@ import { Subscription, fromEvent } from 'rxjs';
   styleUrls: ['./table.component.scss']
 })
 export class TableGameComponent implements OnInit, OnDestroy {
-  @Input() votedCards: { [userId: string]: number } = {};
   @Input() currentUserVote: { vote: number | null, id: string | null }= { vote: null, id: null };
   private readonly TABLE_STATE_KEY = 'game_table_state';
   private gameId: string | null = null;
   private subscriptions: Subscription = new Subscription();
+  private gameCompl:boolean = false;
 
   players: {
     id: string;
@@ -23,6 +24,8 @@ export class TableGameComponent implements OnInit, OnDestroy {
     rol?: string;
     order: number;
     userId?:string
+    overlay?: string | null;
+    vote?: number | null;
   }[] = [
     { id: 'center', name: '', assigned: false, rol: '', order: 1 },
     { id: 'bottom-center', name: '', assigned: false, rol: '', order: 2 },
@@ -35,23 +38,35 @@ export class TableGameComponent implements OnInit, OnDestroy {
   ];
 
   constructor(
-    private gameCommunicationService: GameCommunicationService,
-    private route: ActivatedRoute,
-    private ngZone: NgZone
+    readonly gameCommunicationService: GameCommunicationService,
+    readonly route: ActivatedRoute,
+    readonly ngZone: NgZone,
+    readonly changeDetectorRef: ChangeDetectorRef,
+    readonly gameService :GameService
   ) {
 
    }
 
   ngOnInit(): void {
+    this.subscriptions.add(
+      this.gameCommunicationService.clearOverlays$.subscribe(() => {
+        this.clearAllPlayerOverlays();
+      })
+    );
+
     this.gameId = this.route.snapshot.paramMap.get('gameId');
 
     if (this.gameId) {
       this.initializeGameState();
       this.setupStorageListener();
       this.setupPlayerSubscription();
+      this.setupPlayerColorChangeSubscription();
+      this.setupPlayerVoteChangeSubscription();
     }
   }
-
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
   private initializeGameState(): void {
     this.loadTableState();
     const storedPlayers = this.gameCommunicationService.getStoredPlayers(this.gameId!);
@@ -62,6 +77,31 @@ export class TableGameComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  private setupPlayerColorChangeSubscription(): void {
+    this.subscriptions.add(
+      this.gameCommunicationService.playerColorChange$.subscribe(({ playerId, color }) => {
+        const player = this.getPlayerByID(playerId);
+        if (player) {
+          player.overlay = color;
+          this.saveTableState();
+        }
+      })
+    );
+  }
+
+  private setupPlayerVoteChangeSubscription(): void {
+    this.subscriptions.add(
+      this.gameCommunicationService.playerVoteChange$.subscribe(({ playerId, vote }) => {
+        const player = this.getPlayerByID(playerId);
+        if (player) {
+          player.vote = vote;
+          this.saveTableState();
+        }
+      })
+    );
+  }
+
 
   private setupStorageListener(): void {
     this.subscriptions.add(
@@ -86,13 +126,12 @@ export class TableGameComponent implements OnInit, OnDestroy {
     );
   }
 
+
   private notifyPlayersUpdate(): void {
     localStorage.setItem('last_update_' + this.gameId, Date.now().toString());
   }
 
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
-  }
+
 
   private resetPlayers(): void {
     this.players.forEach(player => {
@@ -102,28 +141,30 @@ export class TableGameComponent implements OnInit, OnDestroy {
     });
   }
 
-  getPlayerCardOverlay(playerId: string): string | null {
-
+  getPlayerCardOverlay(playerId: string):{ overlay: string | null, vote: number | null } {
     const player = this.getPlayerByID(playerId);
 
-    if (!player) return null;
-    if (this.currentUserVote.vote !== null && this.currentUserVote.id == player.userId) {
-      return 'rgba(219, 96, 213, 0.788)';
+    if (!player) {
+      return { overlay: null, vote: null };
     }
 
-    return null;
-  }
-
-  getPlayerCardText(playerId: string): string | null {
-    const player = this.getPlayerByID(playerId);
-    if (!player) return null;
-
-    if (this.votedCards && Object.keys(this.votedCards).length > 0) {
-      return this.votedCards[player.id]?.toString() || null;
+    if (this.gameId) {
+      this.gameService.getGameById(this.gameId).subscribe({
+        next: (game) => {
+          if(game.state == "completed")this.gameCompl=true;
+        }
+      });
     }
-
-    return null;
+    if (this.currentUserVote.vote !== null && this.currentUserVote.id == player.userId && !this.gameCompl) {
+      const color = 'rgba(219, 96, 213, 0.788)';
+      if (player.overlay !== color) {
+        this.gameCommunicationService.notifyPlayerColorChange(player.id, color, this.currentUserVote.vote);
+      }
+      return { overlay: color, vote: this.currentUserVote.vote };
+    }
+    return { overlay: player.overlay || null, vote: player.vote || null };
   }
+
 
   private loadTableState(): void {
     if (!this.gameId) return;
@@ -182,5 +223,14 @@ export class TableGameComponent implements OnInit, OnDestroy {
     return this.players
       .filter(player => player.assigned)
       .map(player => ({ id: player.id, name: player.name }));
+  }
+
+  clearAllPlayerOverlays(): void {
+    this.players = this.players.map(player => ({
+      ...player,
+      overlay: null
+    }));
+    this.saveTableState();
+    this.changeDetectorRef.detectChanges();
   }
 }

@@ -30,7 +30,8 @@ import { ToastComponent } from './components/atoms/toast/toast.component';
     CreateGamePage,
     CartComponent,
     ToastComponent,
-    ButtonComponent
+    ButtonComponent,
+
 
   ],
   imports: [

@@ -14,44 +14,59 @@
   <section class="table-container">
     <app-table-game
       #tableGame
-      [votedCards]="gameState === 'completed' ? gameVotes : {}"
       [currentUserVote]="getCurrentUserVote()"
     ></app-table-game>
   </section>
 
   <section class="cart-container">
-    <ng-container *ngIf="gameState !== 'completed'">
+    <ng-container *ngIf="!isGameComplete">
       <app-cart
         *ngFor="let number of fibonacciNumbers"
         [number]="number"
         [isVoted]="getCurrentUserVote().vote === number"
         (cardSelected)="vote(number)"
-        [disabled]="!isPlayerRole()"
+        [disabled]="!isPlayerRole() || currentUserVote !== null"
       ></app-cart>
       <app-cart
+        [disabled]="!isPlayerRole() || currentUserVote !== null"
         [number]="'?'"
       ></app-cart>
       <app-cart
         [number]="'☕'"
+        [disabled]="!isPlayerRole() || currentUserVote !== null"
       ></app-cart>
     </ng-container>
 
-    <ng-container *ngIf="gameState === 'completed'">
-      <ng-container *ngFor="let votedNumber of objectKeys(gameVotes)">
+    <ng-container *ngIf="isGameComplete">
+      <ng-container *ngFor="let voteInfo of getUniqueVotes()">
         <app-cart
-          [number]="gameVotes[votedNumber]"
-          [votes]="getVotesForNumber(gameVotes[votedNumber])"
+          [number]="voteInfo.vote"
+          [votes]="voteInfo.count"
         ></app-cart>
       </ng-container>
     </ng-container>
   </section>
+  <div *ngIf="isGameComplete" class="average-container">
+    <p class="average-text">Promedio:</p>
+    <p class="average-value">{{ getAverageVote() | number: '1.0-2' }}</p>
+  </div>
 
-  <div *ngIf="isAdminChecked && isAdmin" class="buton-cont">
+  <div *ngIf=" isAdmin && !isGameComplete" class="buton-cont">
     <app-button
       [disabled]="!canRevealVotes()"
       (onClick)="revealVotes()"
+      [revealt]="true"
     >
       Revelar Cartas
+    </app-button>
+  </div>
+  <div *ngIf=" isAdmin && isGameComplete" class="restar-cont">
+    <app-button
+      [disabled]="false"
+      (onClick)="revealVotes()"
+      [revealt]="true"
+    >
+      Nueva votación
     </app-button>
   </div>
 </main>

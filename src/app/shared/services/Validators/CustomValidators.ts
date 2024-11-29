@@ -5,9 +5,12 @@ export class CustomValidators {
     const value = control.value;
 
     if (!value) return null;
+    if (value.trim().length < 5) {
+      return { minlength: true };
+    }
 
-    if (value.length < 5 || value.length > 20) {
-      return { length: true };
+    if (value.length > 20) {
+      return { maxlength: true };
     }
 
     if (/[_,.*#/-]/.test(value)) {

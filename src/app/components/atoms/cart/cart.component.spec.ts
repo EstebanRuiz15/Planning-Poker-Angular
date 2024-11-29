@@ -1,45 +1,59 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CartComponent } from './cart.component';
+import { By } from '@angular/platform-browser';
 
 describe('CartComponent', () => {
   let component: CartComponent;
   let fixture: ComponentFixture<CartComponent>;
+  let cartElement: HTMLElement;
+  let cardSelectedSpy: jest.Mock;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ CartComponent ]
-    })
-    .compileComponents();
-  });
+      declarations: [CartComponent],
+    }).compileComponents();
 
-  beforeEach(() => {
     fixture = TestBed.createComponent(CartComponent);
     component = fixture.componentInstance;
+    cartElement = fixture.nativeElement;
+
+    cardSelectedSpy = jest.fn();
+    component.cardSelected.subscribe(cardSelectedSpy);
+
+    fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('should create the component', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should accept number input', () => {
-    component.number = 5;
+  it('should emit cardSelected when card is clicked and not disabled', () => {
+    component.number = 1;
+    component.disabled = false;
     fixture.detectChanges();
-    expect(component.number).toBe(5);
 
-    component.number = '10';
-    fixture.detectChanges();
-    expect(component.number).toBe('10');
+    const cartElement = fixture.nativeElement.querySelector('.cart') as HTMLElement;
+
+    cartElement.click();
+
+    expect(cardSelectedSpy).toHaveBeenCalledWith(1);
   });
 
-  it('should render number in template', () => {
-    component.number = 5;
+  it('should display number correctly when input is provided', () => {
+    component.number = 2;
     fixture.detectChanges();
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.cart-number')?.textContent).toContain('5');
+    const cartElement = fixture.debugElement.query(By.css('.cart'));
+    const numberElement = cartElement.query(By.css('.number'));
 
-    component.number = '15';
+    expect(numberElement.nativeElement.textContent).toBe('2');
+  });
+
+
+  it('should not apply the isVoted input when false', () => {
+    component.isVoted = false;
     fixture.detectChanges();
-    expect(compiled.querySelector('.cart-number')?.textContent).toContain('15');
+    const votedElement = cartElement.querySelector('.cart-voted');
+    expect(votedElement).toBeNull();
   });
 });

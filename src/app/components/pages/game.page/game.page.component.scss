@@ -84,8 +84,49 @@ app-cart {
 
 .buton-cont {
   position: absolute;
-  top: 5rem;
-  left: 20%;
+  top: 42%;
+  left: 44.5%;
+  z-index: 10;
+  width: auto;
+
+}app-cart {
+  margin: 5px;
+}
+
+.vote-count {
+  color: #fff;
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+.average-container {
+  position: absolute;
+  bottom: 35px;
+  right: 18rem;
+  flex-direction: column;
+  text-align: center;
+  align-items: center;
+  display: flex;
+}
+
+.average-text {
+  font-size: 1.3em;
+  color: #fff;
+}
+
+.average-value {
+  font-size: 2.5rem;
+  color: #fff;
+  right: 2rem;
+  margin-top: 0;
+}
+
+.restar-cont {
+  position: absolute;
+  top: 42%;
+  left: 44%;
   z-index: 10;
   width: auto;
 }
+
+

@@ -1,5 +1,5 @@
 import { Component, Output, EventEmitter, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CreateGameRequest } from '../../../shared/interfaces/game.model';
 import { CustomValidators } from 'src/app/shared/services/Validators/CustomValidators';
 import { NAME_CANNOT_ONLY_NUMBERS, NAME_LENGHT, NAME_MAX_3_NUMBERS, NAME_NO_SPECIAL_CHARACTERS, NAME_REQUIERED } from 'src/app/shared/Constants';
@@ -28,8 +28,7 @@ export class CreateGameFormComponent implements OnInit {
     this.gameForm.get('name')?.valueChanges.subscribe(() => {
       this.showErrors = true;
       this.gameForm.get('name')?.markAsTouched();
-      this.gameForm.get('name')?.updateValueAndValidity();
-        this.resetErrorTimeout();
+      this.resetErrorTimeout();
     });
   }
 
@@ -37,7 +36,8 @@ export class CreateGameFormComponent implements OnInit {
     const control = this.gameForm.get('name');
     if (control?.errors && this.showErrors) {
       if (control.errors['required']) return NAME_REQUIERED;
-      if (control.errors['length']) return NAME_LENGHT;
+      if (control.errors['minlength']) return NAME_LENGHT;
+      if (control.errors['maxlength']) return NAME_LENGHT;
       if (control.errors['specialCharacters']) return NAME_NO_SPECIAL_CHARACTERS;
       if (control.errors['tooManyNumbers']) return NAME_MAX_3_NUMBERS;
       if (control.errors['onlyNumbers']) return NAME_CANNOT_ONLY_NUMBERS;
@@ -45,11 +45,12 @@ export class CreateGameFormComponent implements OnInit {
     return '';
   }
 
-
   onSubmit(): void {
     this.showErrors = true;
     if (this.gameForm.valid) {
       this.createGame.emit(this.gameForm.value);
+    } else {
+      this.gameForm.markAllAsTouched();
     }
   }
 

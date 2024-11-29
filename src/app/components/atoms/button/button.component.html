@@ -1,7 +1,7 @@
 <button
+[ngClass]="buttonClasses"
   [type]="type"
   [disabled]="disabled"
-  (click)="handleClick()"
-  [ngClass]="buttonClasses">
+  (click)="handleClick()">
   <ng-content></ng-content>
 </button>
