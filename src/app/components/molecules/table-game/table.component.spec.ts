@@ -350,5 +350,98 @@ describe('TableGameComponent', () => {
     expect(overlayInfo.vote).toBe(3);
   });
 
+    describe('Player Interactions', () => {
+      it('should handle multiple player assignments with different roles', () => {
+        const players: User[] = [
+          {
+            id: 'user1',
+            name: 'Player 1',
+            rol: RolUsuario.PLAYER,
+            gameId: 'test-game-id',
+            assigned: false
+          },
+          {
+            id: 'user2',
+            name: 'Viewer 1',
+            rol: RolUsuario.VIEWER,
+            gameId: 'test-game-id',
+            assigned: false
+          }
+        ];
 
-});
+        players.forEach(player => component.assignPlayer(player));
+
+        const assignedPlayers = component.getAssignedPlayers();
+        expect(assignedPlayers.length).toBe(2);
+        expect(assignedPlayers.some(p => p.name === 'Player 1')).toBeTruthy();
+        expect(assignedPlayers.some(p => p.name === 'Viewer 1')).toBeTruthy();
+      });
+
+      it('should not reassign a player to multiple positions', () => {
+        const player: User = {
+          id: 'user1',
+          name: 'Player 1',
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        };
+
+        component.assignPlayer(player);
+        const initialAssignedPlayer = component.getAssignedPlayers()[0];
+
+        component.assignPlayer(player);
+        const assignedPlayers = component.getAssignedPlayers();
+
+        expect(assignedPlayers.length).toBe(1);
+        expect(assignedPlayers[0].id).toBe(initialAssignedPlayer.id);
+      });
+    });
+
+    describe('Voting and Overlay Interactions', () => {
+      it('should handle vote overlay for non-completed game', () => {
+        const player: User = {
+          id: 'user1',
+          name: 'Player 1',
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        };
+
+        component.assignPlayer(player);
+        component.currentUserVote = { vote: 5, id: 'user1' };
+
+
+        const overlayInfo = component.getPlayerCardOverlay('center');
+        expect(overlayInfo.overlay).toBe('rgba(219, 96, 213, 0.788)');
+        expect(overlayInfo.vote).toBe(5);
+      });
+
+      it('should return null for non-existent player overlay', () => {
+        const overlayInfo = component.getPlayerCardOverlay('non-existent');
+        expect(overlayInfo.overlay).toBeNull();
+        expect(overlayInfo.vote).toBeNull();
+      });
+    });
+
+    describe('Player Position Queries', () => {
+      it('should return null for unassigned position', () => {
+        const playerName = component.getPlayerForPosition('side-top-left');
+        expect(playerName).toBeNull();
+      });
+
+      it('should return player name for assigned position', () => {
+        const mockUser: User = {
+          id: 'user1',
+          name: 'Test User',
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        };
+
+        component.assignPlayer(mockUser);
+        const playerName = component.getPlayerForPosition('center');
+        expect(playerName).toBe('Test User');
+      });
+    });
+
+  });

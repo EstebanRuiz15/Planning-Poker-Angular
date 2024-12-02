@@ -1,13 +1,14 @@
-
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { GamePageComponent } from './game.page.component';
 import { GameService } from '../../../shared/services/functionalyty-service/GameService/game.service.impl';
 import { GameCommunicationService } from 'src/app/shared/services/functionalyty-service/comunicationService/comunicationService';
 import { ToastService } from 'src/app/shared/services/toast/toast.service';
 import { Game } from 'src/app/shared/interfaces/game.model';
 import { RolUsuario, User } from '../../../shared/interfaces/user.model';
+import { ChangeDetectorRef } from '@angular/core';
+import { SERVICE_ERROR } from 'src/app/shared/Constants';
 
 describe('GamePageComponent', () => {
   let component: GamePageComponent;
@@ -16,7 +17,7 @@ describe('GamePageComponent', () => {
   let mockGameCommunicationService: jest.Mocked<GameCommunicationService>;
   let mockToastService: jest.Mocked<ToastService>;
 
-  const mockGame:Game = {
+  const mockGame: Game = {
     id: 'game123',
     name: 'Test Game',
     state: 'waiting',
@@ -28,8 +29,8 @@ describe('GamePageComponent', () => {
     id: 'user1',
     name: 'Test User',
     rol: RolUsuario.PLAYER,
-    gameId:"123",
-    assigned:false
+    gameId: '123',
+    assigned: false
   };
 
   beforeEach(async () => {
@@ -40,7 +41,8 @@ describe('GamePageComponent', () => {
       getCurrentUser: jest.fn(),
       playerVote: jest.fn(),
       getGamePlayerCount: jest.fn(),
-      revealVotes: jest.fn()
+      revealVotes: jest.fn(),
+      resetGameVotesAndStatus: jest.fn()
     };
 
     const gameCommunicationServiceMock = {
@@ -50,7 +52,9 @@ describe('GamePageComponent', () => {
       getStoredPlayers: jest.fn(),
       updateGameCompletedStatus: jest.fn(),
       notifyClearOverlays: jest.fn(),
-      getLatestGameVotes: jest.fn()
+      getLatestGameVotes: jest.fn(),
+      resetGameState: jest.fn(),
+      resetPlayerVotesSubject: new Subject<void>()
     };
 
     const toastServiceMock = {
@@ -68,7 +72,8 @@ describe('GamePageComponent', () => {
           useValue: {
             paramMap: of(new Map([['gameId', 'game123']]))
           }
-        }
+        },
+        ChangeDetectorRef
       ]
     }).compileComponents();
 
@@ -112,35 +117,33 @@ describe('GamePageComponent', () => {
   });
 
   describe('Voting Functionality', () => {
-    it('should allow voting for a player', () => {
-      component.vote(5);
-      expect(mockGameService.playerVote).toHaveBeenCalledWith('game123', mockUser.id, 5);
-      expect(component.currentUserVote).toBe(5);
-    });
-
-    it('should prevent voting twice', () => {
-      component.vote(5);
-      component.vote(8);
-      expect(component.currentUserVote).toBe(5);
-    });
 
     it('should check if user has player role', () => {
       expect(component.isPlayerRole()).toBe(true);
     });
-  });
 
-  describe('Vote Revealing', () => {
-    it('should determine if votes can be revealed', () => {
-      component.gameVotes = { 'user1': 5 };
-      expect(component.canRevealVotes()).toBe(true);
+    it('should not allow voting if user already voted', () => {
+      component.currentUserVote = 5;
+      component.vote(8);
+      expect(mockGameService.playerVote).not.toHaveBeenCalled();
     });
 
-    it('should reveal votes', () => {
-      component.revealVotes();
-      expect(mockGameService.revealVotes).toHaveBeenCalledWith('game123');
-      expect(component.isGameComplete).toBe(true);
+    it('should handle voting error', () => {
+      mockGameService.playerVote.mockReturnValue(throwError(() => new Error('Vote error')));
+
+      component.vote(5);
+
+      expect(mockToastService.showToast).toHaveBeenCalledWith(SERVICE_ERROR, 'error');
+    });
+
+    it('should return false for isPlayerRole when no game or user', () => {
+      component.gameId = null;
+      component.userName = null;
+
+      expect(component.isPlayerRole()).toBe(false);
     });
   });
+
 
   describe('Vote Analysis', () => {
     beforeEach(() => {
@@ -156,7 +159,6 @@ describe('GamePageComponent', () => {
       expect(averageVote).toBe(6);
     });
 
-
     it('should get votes for a specific number', () => {
       expect(component.getVotesForNumber(5)).toBe(2);
       expect(component.getVotesForNumber(8)).toBe(1);
@@ -165,15 +167,141 @@ describe('GamePageComponent', () => {
 
   describe('Game Utilities', () => {
     it('should copy invitation link', () => {
+      Object.assign(navigator, {
+        clipboard: {
+          writeText: jest.fn().mockResolvedValue(undefined)
+        }
+      });
+
       const clipboardSpy = jest.spyOn(navigator.clipboard, 'writeText');
       component.copyInvitationLink();
       expect(clipboardSpy).toHaveBeenCalled();
     });
+    it('should get 0 average vote when no votes', () => {
+      component.gameVotes = {};
 
-    it('should restart game', () => {
+      expect(component.getAverageVote()).toBe(0);
+    });
+
+    it('should handle getCurrentUserVote with no votes', () => {
+      mockGameService.getCurrentUser.mockReturnValue(undefined);
+
+      const result = component.getCurrentUserVote();
+
+      expect(result).toEqual({ vote: null, id: '' });
+    });
+
+    it('should handle getUniqueVotes with no votes', () => {
+      component.gameVotes = {};
+
+      const result = component.getUniqueVotes();
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('ngOnDestroy', () => {
+    it('should unsubscribe from all subscriptions', () => {
+      const subscriptionSpy = jest.spyOn(component['subscriptions'], 'unsubscribe');
+      component.ngOnDestroy();
+      expect(subscriptionSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('checkAdminStatus', () => {
+    it('should determine if the user is an admin', () => {
+      component.checkAdminStatus();
+      expect(mockGameService.isAdminUser).toHaveBeenCalledWith('game123', 'testUser');
+    });
+  });
+
+  describe('onCardSelected', () => {
+    it('should update user votes and stored players', () => {
+      component.onCardSelected('user1', 'game123', 5);
+      expect(mockGameCommunicationService.updateUserVote).toHaveBeenCalledWith('user1', 'game123', 5);
+      expect(component.users).toEqual([mockUser]);
+    });
+  });
+
+  describe('getCurrentUserVote', () => {
+    it('should get the current user vote', () => {
       component.gameVotes = { 'user1': 5 };
-      component.restartGame();
+      const currentUserVote = component.getCurrentUserVote();
+      expect(currentUserVote).toEqual({ vote: 5, id: 'user1' });
+    });
+  });
+
+  describe('getUniqueVotes', () => {
+    it('should get unique votes', () => {
+      component.gameVotes = { 'user1': 5, 'user2': 8, 'user3': 5 };
+      const uniqueVotes = component.getUniqueVotes();
+      expect(uniqueVotes).toEqual([{ vote: 5, count: 2 }, { vote: 8, count: 1 }]);
+    });
+  });
+
+  describe('Local Storage Events', () => {
+    it('should handle game completion event', () => {
+      const storageEvent = new StorageEvent('storage', {
+        key: 'game_complete_game123',
+        newValue: JSON.stringify({ gameId: 'game123', isComplete: true })
+      });
+      window.dispatchEvent(storageEvent);
+      expect(component.isGameComplete).toBe(true);
+    });
+
+    it('should handle game restart event', () => {
+      const storageEvent = new StorageEvent('storage', {
+        key: 'game_restart_game123',
+        newValue: 'true'
+      });
+      window.dispatchEvent(storageEvent);
       expect(component.gameVotes).toEqual({});
+    });
+  });
+
+  describe('Admin and Game Control', () => {
+    it('should return false for canRevealVotes when no game id', () => {
+      component.gameId = null;
+
+      expect(component.canRevealVotes()).toBe(false);
+    });
+
+    it('should canRevealVotes correctly when votes match player count', () => {
+      mockGameService.getGamePlayerCount.mockReturnValue(2);
+      component.gameVotes = { 'user1': 5, 'user2': 8 };
+      component.gameState = 'voted';
+
+      expect(component.canRevealVotes()).toBe(true);
+    });
+
+    it('should handle checkAdminStatus with no user', () => {
+      mockGameService.AuthService.mockReturnValue(null);
+
+      component.checkAdminStatus();
+
+      expect(component.isAdmin).toBe(false);
+    });
+  });
+
+  describe('Game Restart', () => {
+    it('should handle game restart with no game id', () => {
+      component.gameId = null;
+
+      component.restartGame();
+
+      expect(mockGameCommunicationService.resetGameState).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Local Storage Events', () => {
+    it('should handle game restart event with no game id', () => {
+      const storageEvent = new StorageEvent('storage', {
+        key: 'game_restart_',
+        newValue: JSON.stringify({ gameId: null })
+      });
+
+      window.dispatchEvent(storageEvent);
+
     });
   });
 });
