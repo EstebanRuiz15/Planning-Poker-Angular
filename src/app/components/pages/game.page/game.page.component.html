@@ -9,6 +9,9 @@
       <span>{{ getInitials(userName) }}</span>
     </div>
     <button class="custom-button" (click)="copyInvitationLink()">Invitar jugadores</button>
+    <div *ngIf="linkCopied" class="confirmation-message">
+      <fa-icon [icon]="faCheck"></fa-icon> ¡Copiado!
+    </div>
   </header>
 
   <section class="table-container">
@@ -63,7 +66,7 @@
   <div *ngIf=" isAdmin && isGameComplete" class="restar-cont">
     <app-button
       [disabled]="false"
-      (onClick)="revealVotes()"
+      (onClick)="restartGame()"
       [revealt]="true"
     >
       Nueva votación
