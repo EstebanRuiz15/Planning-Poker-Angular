@@ -147,6 +147,19 @@ export class GameService {
     return currentUser?.admin || false;
   }
 
+  resetGameVotesAndStatus(gameId: string):void {
+    this.loadGamesFromStorage();
+    const game = this.games.find(g => g.id === gameId);
 
+    if (!game) {
+      throwError(() => new Error(GAME_NOT_FOUND));
+    }
+    if(game){
+    game.votes = {};
+    game.state = 'waiting';
+
+    this.saveGamesToStorage();
+    }
+  }
 
 }

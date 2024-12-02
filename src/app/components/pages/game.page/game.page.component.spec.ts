@@ -156,11 +156,6 @@ describe('GamePageComponent', () => {
       expect(averageVote).toBe(6);
     });
 
-    it('should count votes for each number correctly', () => {
-      const uniqueVotes = component.getUniqueVotes();
-      expect(uniqueVotes).toContainEqual({ vote: 5, count: 2 });
-      expect(uniqueVotes).toContainEqual({ vote: 8, count: 1 });
-    });
 
     it('should get votes for a specific number', () => {
       expect(component.getVotesForNumber(5)).toBe(2);

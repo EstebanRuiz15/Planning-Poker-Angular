@@ -16,10 +16,12 @@ export class GameCommunicationService {
   playerVoteChange$ = this.playerVoteChangeSubject.asObservable();
   readonly gameStateSubject = new BehaviorSubject<'waiting' | 'voted' | 'completed'>('waiting');
   gameState$ = this.gameStateSubject.asObservable();
-  readonly gameVotesSubject = new BehaviorSubject<{ [userId: string]: number }>({});
+  readonly gameVotesSubject = new BehaviorSubject<{ [userId: string]: number | null}>({});
   gameVotes$ = this.gameVotesSubject.asObservable();
   readonly clearOverlaysSubject = new Subject<void>();
   clearOverlays$ = this.clearOverlaysSubject.asObservable();
+  readonly resetPlayerVotesSubject = new Subject<void>();
+  resetPlayerVotes$ = this.resetPlayerVotesSubject.asObservable();
 
 
   constructor() {
@@ -109,6 +111,18 @@ export class GameCommunicationService {
     return {};
   }
 
+  resetGameState(gameId: string): void {
+    const currentVotes = this.gameVotesSubject.getValue();
+    const resetVotes = { ...currentVotes };
+    if (resetVotes) {
+      Object.keys(resetVotes).forEach(userId => {
+        resetVotes[userId] = 0;
+      });
+      this.gameVotesSubject.next(resetVotes);
+    }
 
+    this.clearOverlaysSubject.next();
+    this.gameStateSubject.next('waiting');
+  }
 
 }

@@ -6,6 +6,7 @@ import { GameCommunicationService } from 'src/app/shared/services/functionalyty-
 import { Observable, Subscription } from 'rxjs';
 import { ToastService } from 'src/app/shared/services/toast/toast.service';
 import { SERVICE_ERROR } from 'src/app/shared/Constants';
+import { faCheck } from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-game-page',
@@ -17,7 +18,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
   userName: string | null = null;
   gameId: string | null = null;
   gameState: 'waiting' | 'voted' | 'completed' = 'waiting';
-  gameVotes: { [userId: string]: number } = {};
+  gameVotes: { [userId: string]: number | null } = {};
   isAdmin = false;
   isGameComplete:boolean=false;
   currentUserVote: number | null = null;
@@ -25,6 +26,8 @@ export class GamePageComponent implements OnInit, OnDestroy {
   users: User[] = [];
   revealedCards: { [userId: string]: number } = {};
   fibonacciNumbers: number[] = this.generateFibonacciUpTo89();
+  linkCopied: boolean =false;
+  faCheck = faCheck;
 
   private subscriptions: Subscription = new Subscription();
 
@@ -44,10 +47,23 @@ export class GamePageComponent implements OnInit, OnDestroy {
         const gameCompleteData = JSON.parse(event.newValue);
         if (gameCompleteData.gameId === this.gameId) {
           this.isGameComplete = gameCompleteData.isComplete;
-          this.gameVotes= this.gameCommunicationService.getLatestGameVotes(this.gameId);
+          this.gameVotes = this.gameCommunicationService.getLatestGameVotes(this.gameId);
           this.gameCommunicationService.notifyClearOverlays();
           this.changeDetectorRef.detectChanges();
         }
+      }
+
+      if (event.key && event.key.startsWith('game_restart_') && event.newValue) {
+        const gameRestartData = JSON.parse(event.newValue);
+        if (gameRestartData.gameId === this.gameId) {
+          this.resetAllGame();
+          if(this.gameId){
+            this.gameCommunicationService.resetGameState(this.gameId);
+            this.resetAllGame();
+            this.gameService.resetGameVotesAndStatus(this.gameId);
+            this.gameCommunicationService.resetPlayerVotesSubject.next();
+          }
+      }
       }
     });
 
@@ -158,6 +174,8 @@ export class GamePageComponent implements OnInit, OnDestroy {
       const baseUrl = window.location.origin;
       const invitationLink = `${baseUrl}/register/${this.gameName}/${this.gameId}`;
       navigator.clipboard.writeText(invitationLink).then(() => {
+        this.linkCopied = true;
+        setTimeout(() => this.linkCopied = false, 3000);
       }).catch(err => {
         this.toastService.showToast(SERVICE_ERROR,"error")
       });
@@ -187,10 +205,12 @@ export class GamePageComponent implements OnInit, OnDestroy {
     return fib;
   }
   getAverageVote(): number {
-    const votes = Object.values(this.gameVotes).filter(vote => typeof vote === 'number');
+    const votes = Object.values(this.gameVotes).filter(vote => typeof vote === 'number') as number[];
+    if (votes.length === 0) return 0;
     const sum = votes.reduce((a, b) => a + b, 0);
-    return votes.length ? sum / votes.length : 0;
+    return sum / votes.length;
   }
+
 
   getUniqueVotes(): { vote: number, count: number }[] {
     const voteCounts: { [key: number]: number } = {};
@@ -211,7 +231,27 @@ export class GamePageComponent implements OnInit, OnDestroy {
   }
 
   restartGame() {
-    this.gameVotes = {};
+    if (this.gameId) {
+      localStorage.setItem(`game_restart_${this.gameId}`, JSON.stringify({
+        gameId: this.gameId,
+        timestamp: Date.now()
+      }));
+      this.gameCommunicationService.resetGameState(this.gameId);
+      this.resetAllGame();
+      this.gameService.resetGameVotesAndStatus(this.gameId);
+      this.gameCommunicationService.resetPlayerVotesSubject.next();
+    }
+  }
+
+  private resetAllGame(): void {
+
+    this.isGameComplete=false;
+    this.gameState="waiting";
+    Object.keys(this.gameVotes).forEach(userId => {
+      this.gameVotes[userId] = null;
+    });
+    this.currentUserVote = null;
+    this.changeDetectorRef.detectChanges();
   }
 
   get objectKeys() {

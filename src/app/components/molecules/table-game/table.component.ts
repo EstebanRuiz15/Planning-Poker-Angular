@@ -14,7 +14,7 @@ export class TableGameComponent implements OnInit, OnDestroy {
   @Input() currentUserVote: { vote: number | null, id: string | null }= { vote: null, id: null };
   private readonly TABLE_STATE_KEY = 'game_table_state';
   private gameId: string | null = null;
-  private subscriptions: Subscription = new Subscription();
+  readonly subscriptions: Subscription = new Subscription();
   private gameCompl:boolean = false;
 
   players: {
@@ -54,6 +54,12 @@ export class TableGameComponent implements OnInit, OnDestroy {
       })
     );
 
+    this.subscriptions.add(
+      this.gameCommunicationService.resetPlayerVotes$.subscribe(() => {
+        this.resetPlayerVotes();
+
+      })
+    );
     this.gameId = this.route.snapshot.paramMap.get('gameId');
 
     if (this.gameId) {
@@ -85,6 +91,7 @@ export class TableGameComponent implements OnInit, OnDestroy {
         if (player) {
           player.overlay = color;
           this.saveTableState();
+          this.changeDetectorRef.detectChanges();
         }
       })
     );
@@ -97,6 +104,7 @@ export class TableGameComponent implements OnInit, OnDestroy {
         if (player) {
           player.vote = vote;
           this.saveTableState();
+          this.changeDetectorRef.detectChanges();
         }
       })
     );
@@ -155,6 +163,7 @@ export class TableGameComponent implements OnInit, OnDestroy {
         }
       });
     }
+    console.log("pasando por get overlay " ,this.currentUserVote, player.userId, this.gameCompl)
     if (this.currentUserVote.vote !== null && this.currentUserVote.id == player.userId && !this.gameCompl) {
       const color = 'rgba(219, 96, 213, 0.788)';
       if (player.overlay !== color) {
@@ -190,6 +199,16 @@ export class TableGameComponent implements OnInit, OnDestroy {
       player.name === user.name &&
       player.assigned
     );
+  }
+
+  private resetPlayerVotes(): void {
+    this.gameCompl=false;
+    this.players.forEach(player => {
+      player.vote = null;
+    });
+    this.saveTableState();
+    this.changeDetectorRef.detectChanges();
+    this.notifyPlayersUpdate();
   }
 
   assignPlayer(user: User) {

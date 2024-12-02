@@ -129,4 +129,17 @@ app-cart {
   width: auto;
 }
 
+.confirmation-message {
+  position: absolute;
+  top: 100%;
+  left: 40%;
+  color: rgb(11, 173, 11);
+  font-weight: bold;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+}
 
+.confirmation-message fa-icon {
+  margin-right: 5px;
+}
