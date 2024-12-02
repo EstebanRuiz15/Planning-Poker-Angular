@@ -174,4 +174,63 @@ describe('GameCommunicationService', () => {
 
     expect(clearOverlaysNotified).toBe(true);
   });
+
+  it('should initialize player$ with null if no player is stored', () => {
+    const newService = TestBed.inject(GameCommunicationService);
+
+    newService.player$.subscribe(player => {
+      expect(player).toBeNull();
+    });
+  });
+
+  it('should update game state when resetGameState is called', () => {
+    service.gameState$.subscribe(state => {
+      expect(state).toBe('waiting');
+    });
+    service.resetGameState('game1');
+  });
+
+  it('should return an empty object when there are no game votes stored', () => {
+    const gameId = 'game1';
+    const latestVotes = service.getLatestGameVotes(gameId);
+    expect(latestVotes).toEqual({});
+  });
+
+  it('should store players separately for different games', () => {
+    const player1: User = { id: '1', name: 'Player 1', gameId: 'game1', rol: RolUsuario.PLAYER, assigned: false };
+    const player2: User = { id: '2', name: 'Player 2', gameId: 'game2', rol: RolUsuario.PLAYER, assigned: false };
+
+    service.addPlayerToGame(player1);
+    service.addPlayerToGame(player2);
+
+    const playersGame1 = service.getStoredPlayers('game1');
+    const playersGame2 = service.getStoredPlayers('game2');
+
+    expect(playersGame1).toEqual([player1]);
+    expect(playersGame2).toEqual([player2]);
+  });
+
+  it('should handle null or empty color and vote in notifyPlayerColorChange', () => {
+    let colorChangeNotified = false;
+    let voteChangeNotified = false;
+
+    service.playerColorChange$.subscribe(({ playerId, color }) => {
+      if (playerId === '1' && color === '') {
+        colorChangeNotified = true;
+      }
+    });
+
+    service.playerVoteChange$.subscribe(({ playerId, vote }) => {
+      if (playerId === '1' && vote === 0) {
+        voteChangeNotified = true;
+      }
+    });
+
+    service.notifyPlayerColorChange('1', '', 0);
+
+    expect(colorChangeNotified).toBe(true);
+    expect(voteChangeNotified).toBe(true);
+  });
+
+
 });

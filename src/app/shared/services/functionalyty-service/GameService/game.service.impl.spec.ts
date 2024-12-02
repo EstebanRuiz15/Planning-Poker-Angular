@@ -258,4 +258,90 @@ describe('GameService', () => {
       }
     });
   });
+
+  it('should reset game votes and state to waiting', () => {
+    const user1: User = { id: 'user1', name: 'Test User 1', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' };
+
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: [user1],
+      state: 'voted',
+      votes: { 'user1': 5 }
+    };
+
+    service['games'] = [game];
+
+    service.resetGameVotesAndStatus('game1');
+
+    const resetGame = service['games'].find(g => g.id === 'game1');
+    expect(resetGame?.state).toBe('waiting');
+    expect(Object.keys(resetGame?.votes || {}).length).toBe(0);
+  });
+
+  it('should return false if the user is not an admin', () => {
+    const user: User = { id: 'user1', name: 'Test User', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' };
+
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: [user],
+      state: 'waiting',
+      votes: {}
+    };
+
+    service['games'] = [game];
+
+    const isAdmin = service.isAdminUser('game1', 'Test User');
+    expect(isAdmin).toBe(false);
+  });
+
+  it('should return null if no user is authenticated', () => {
+    jest.spyOn(localStorage, 'getItem').mockReturnValueOnce(null);
+
+    const userName = service.AuthService();
+    expect(userName).toBeNull();
+  });
+
+  it('should create a game with a unique ID even if the name is empty', (done) => {
+    const newGameRequest: CreateGameRequest = { name: '' };
+
+    service.createGame(newGameRequest).subscribe((game: Game) => {
+      expect(game.id).toBeTruthy();
+      expect(game.name).toBe('');
+      expect(game.players.length).toBe(0);
+      expect(game.state).toBe('waiting');
+      done();
+    });
+  });
+
+  it('should throw error if revealing votes for a non-existing game', (done) => {
+    service.revealVotes('nonexistentGame').subscribe({
+      error: (error) => {
+        expect(error.message).toBe(GAME_NOT_FOUND);
+        done();
+      }
+    });
+  });
+
+  it('should throw error if joining a game that is full', (done) => {
+    const user: User = { id: 'user2', name: 'Test User 2', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' };
+
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: Array(8).fill({ id: 'player', name: 'Player', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' }),
+      state: 'waiting',
+      votes: {}
+    };
+
+    service['games'] = [game];
+
+    service.joinGame('game1', user).subscribe({
+      error: (error) => {
+        expect(error.message).toBe('Game is full');
+        done();
+      }
+    });
+  });
 });
