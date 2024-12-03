@@ -28,6 +28,8 @@ export class GamePageComponent implements OnInit, OnDestroy {
   fibonacciNumbers: number[] = this.generateFibonacciUpTo89();
   linkCopied: boolean =false;
   faCheck = faCheck;
+  isRoleChangeVisible = false;
+  currentUserRole: string = '';
 
   private subscriptions: Subscription = new Subscription();
 
@@ -65,7 +67,28 @@ export class GamePageComponent implements OnInit, OnDestroy {
           }
       }
       }
+
+      if (event.key && event.key.startsWith('admin_change_') && event.newValue) {
+        const adminChangeData = JSON.parse(event.newValue);
+        if (adminChangeData.gameId === this.gameId) {
+          this.isAdmin=false;
+          this.checkAdminStatus();
+          this.changeDetectorRef.detectChanges();
+        }
+      }
+
+      this.loadUserRole();
     });
+
+    this.subscriptions.add(
+      this.gameCommunicationService.adminChange$.subscribe(() => {
+        console.log("change admin in game service")
+        this.isAdmin=false;
+        this.checkAdminStatus();
+        this.changeDetectorRef.detectChanges();
+
+      })
+    );
 
     this.subscriptions.add(
       this.route.paramMap.subscribe(params => {
@@ -88,11 +111,27 @@ export class GamePageComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
+  loadUserRole(): void {
+    const currentUser = this.gameService.getCurrentUser(this.gameId!, this.userName!);
+    console.log("current user is: ", currentUser)
+  if (currentUser && currentUser.rol) {
+    this.currentUserRole = currentUser.rol.toLowerCase();
+  } else {
+    this.currentUserRole = 'void';
+  }
+  }
+
   checkAdminStatus(): void {
-    this.userName = this.gameService.AuthService();
-    if (this.gameId && this.userName) {
-      this.isAdmin = this.gameService.isAdminUser(this.gameId, this.userName);
+    if (this.gameId) {
+      this.userName = localStorage.getItem(`userName_${this.gameId}`);
+
+      if (this.userName) {
+        this.isAdmin = this.gameService.isAdminUser(this.gameId, this.userName);
+      }
+
+      this.changeDetectorRef.detectChanges();
     }
+
   }
 
   getInitials(name: string): string {
@@ -144,11 +183,12 @@ export class GamePageComponent implements OnInit, OnDestroy {
 
   canRevealVotes(): boolean {
     if (!this.gameId) return false;
-
+    const isStillAdmin = this.gameService.isAdminUser(this.gameId, this.userName!);
     const playerCount = this.gameService.getGamePlayerCount(this.gameId, RolUsuario.PLAYER);
     const votedCount = this.gameVotes ? Object.keys(this.gameVotes).length : 0;
+    console.log("can revealt votes: ", isStillAdmin, playerCount, votedCount, this.gameState)
 
-    return playerCount === votedCount && this.gameState === 'voted';
+    return isStillAdmin && playerCount === votedCount && this.gameState === 'voted';
   }
 
   revealVotes(): void {
@@ -228,6 +268,35 @@ export class GamePageComponent implements OnInit, OnDestroy {
       vote: Number(vote),
       count: voteCounts[Number(vote)]
     }));
+  }
+
+  toggleRoleChange(): void {
+    this.loadUserRole();
+    this.isRoleChangeVisible = !this.isRoleChangeVisible;
+  }
+
+  changeRole(): void {
+    console.log("esto es game votes", this.gameVotes)
+    if(this.gameVotes || Object.keys(this.gameVotes).length > 0){
+      this.toastService.showToast('Ya inicio la votación, no se puede cambiar', 'error');
+
+    }
+    if (this.gameId && this.userName && Object.keys(this.gameVotes).length === 0) {
+      const currentUser = this.gameService.getCurrentUser(this.gameId, this.userName);
+      if (currentUser) {
+        this.gameService.updateUserRole(this.gameId, currentUser.id);
+            this.isRoleChangeVisible = false;
+
+            if(this.gameId && currentUser.rol)
+              this.gameCommunicationService.notifyPlayerRoleChange(
+                currentUser.id,
+                this.gameId,
+                currentUser.rol
+              );
+      this.toastService.showToast('Rol cambiado con éxito', 'success');
+    }
+  }
+
   }
 
   restartGame() {

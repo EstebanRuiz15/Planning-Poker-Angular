@@ -84,7 +84,11 @@ export class GameService {
     return Math.random().toString(36).substr(2, 9);
   }
 
-  AuthService(): string | null {
+  AuthService(gameId?: string): string | null{
+    if (gameId) {
+      return localStorage.getItem(`userName_${gameId}`);
+    }
+
     return localStorage.getItem('userName');
   }
 
@@ -162,4 +166,54 @@ export class GameService {
     }
   }
 
+  updateUserRole(gameId: string, userId: string): void {
+    const game = this.games.find(g => g.id === gameId);
+
+    if (!game) {
+     throwError(() => new Error(GAME_NOT_FOUND));
+    }
+    if(game){
+    const user = game.players.find(p => p.id === userId);
+
+    if (!user) {
+      throwError(() => new Error('User not found in game'));
+    }
+
+    if(user)
+    if (user.rol == RolUsuario.PLAYER) {
+      console.log("cambiando a viwer")
+      user.rol = RolUsuario.VIEWER;
+    } else if (user.rol == RolUsuario.VIEWER) {
+      console.log("cambiando a player")
+      user.rol = RolUsuario.PLAYER;
+    }
+
+    console.log("jugador queda asi: ", user)
+    this.saveGamesToStorage();
+  }
+
+  }
+
+  changeAdmin(id: string, gameId: string):void{
+    const game = this.games.find(g => g.id === gameId);
+
+    if (!game) {
+     throwError(() => new Error(GAME_NOT_FOUND));
+    }
+    if(game){
+    const admin=game.players.find(p => p.admin == true)
+    const user = game.players.find(p => p.id === id);
+
+    if (!user || !admin) {
+      throwError(() => new Error('User not found in game'));
+    }
+    console.log("usuarios a cambiar admin: ", admin, "user: ",user)
+    if(admin && user){
+    admin.admin=false;
+    user.admin=true;
+    this.saveGamesToStorage();
+    console.log("usuarios a cambiar admin: ", admin, "user: ",user,"juego: ", game)
+    }
+   }
+  }
 }

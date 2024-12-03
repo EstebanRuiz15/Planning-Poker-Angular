@@ -63,8 +63,13 @@
   margin-right: 10px;
   font-size: 1.5em;
   font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
-
+.user-circle:hover {
+  background-color: #5a9fd7;
+  transform: scale(1.1);
+}
 .cart-container {
   display: flex;
   justify-content: center;
@@ -142,4 +147,31 @@ app-cart {
 
 .confirmation-message fa-icon {
   margin-right: 5px;
+}
+
+.role-change-container {
+  position: absolute;
+  top: 50px;
+  right: 10px;
+  background-color: rgba(255, 255, 255, 0.863);
+  border: 1px solid #fffdfd;
+  border-radius: 20rem;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: block;
+  z-index: 100;
+}
+.role-change-container.show {
+  display: block;
+}
+.role-change-container p {
+  cursor: pointer;
+  color: #4607aabe;
+  font-size: 1rem;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.role-change-container p:hover {
+  text-decoration: underline;
 }

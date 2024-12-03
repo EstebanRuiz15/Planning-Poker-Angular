@@ -127,7 +127,7 @@ export class RegisterUserComponent implements OnInit, OnDestroy {
           this.saveUserToStorage(newUser);
 
           this.gameCommunicationService.addPlayerToGame(newUser);
-          localStorage.setItem('userName', newUser.name);
+          localStorage.setItem(`userName_${gameId}`, newUser.name);
           localStorage.setItem('currentUserId', newUser.id);
 
           this.router.navigate(['/game', gameId]);

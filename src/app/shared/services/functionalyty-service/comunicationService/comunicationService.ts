@@ -1,7 +1,7 @@
 
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { User } from 'src/app/shared/interfaces/user.model';
+import { RolUsuario, User } from 'src/app/shared/interfaces/user.model';
 
 @Injectable({
   providedIn: 'root'
@@ -22,7 +22,10 @@ export class GameCommunicationService {
   clearOverlays$ = this.clearOverlaysSubject.asObservable();
   readonly resetPlayerVotesSubject = new Subject<void>();
   resetPlayerVotes$ = this.resetPlayerVotesSubject.asObservable();
-
+  readonly playerRoleChangeSubject = new Subject<{ playerId: string, gameId: string, newRole:RolUsuario }>();
+  playerRoleChange$ = this.playerRoleChangeSubject.asObservable();
+  readonly adminChangeSubject = new Subject<{ playerId: string, gameId: string}>();
+  adminChange$ = this.adminChangeSubject.asObservable();
 
   constructor() {
     const storedPlayer = localStorage.getItem('currentPlayer');
@@ -124,5 +127,16 @@ export class GameCommunicationService {
     this.clearOverlaysSubject.next();
     this.gameStateSubject.next('waiting');
   }
+  notifyPlayerRoleChange(playerId: string, gameId: string, newRole:RolUsuario): void {
+    this.playerRoleChangeSubject.next({ playerId, gameId, newRole });
+  }
 
+  notifyAdminChange(playerId: string, gameId:string) {
+    this.adminChangeSubject.next({playerId, gameId});
+    localStorage.setItem(`admin_change_${gameId}`, JSON.stringify({
+      playerId,
+      gameId,
+      timestamp: Date.now()
+    }));
+  }
 }

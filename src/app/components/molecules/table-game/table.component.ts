@@ -16,6 +16,9 @@ export class TableGameComponent implements OnInit, OnDestroy {
   private gameId: string | null = null;
   readonly subscriptions: Subscription = new Subscription();
   private gameCompl:boolean = false;
+  userName:string="";
+  showAdminTransferOption = false;
+  adminTransferOptions: { [key: string]: boolean } = {};
 
   players: {
     id: string;
@@ -68,7 +71,9 @@ export class TableGameComponent implements OnInit, OnDestroy {
       this.setupPlayerSubscription();
       this.setupPlayerColorChangeSubscription();
       this.setupPlayerVoteChangeSubscription();
+      this.setupPlayerRoleChangeSubscription();
     }
+
   }
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
@@ -92,6 +97,23 @@ export class TableGameComponent implements OnInit, OnDestroy {
           player.overlay = color;
           this.saveTableState();
           this.changeDetectorRef.detectChanges();
+        }
+      })
+    );
+  }
+
+  private setupPlayerRoleChangeSubscription(): void {
+    this.subscriptions.add(
+      this.gameCommunicationService.playerRoleChange$.subscribe(({ playerId, gameId, newRole }) => {
+        if (gameId === this.gameId) {
+          const player = this.getPlayerByUserId(playerId);
+          if (player) {
+            player.rol = newRole;
+            this.saveTableState();
+            this.changeDetectorRef.detectChanges();
+            this.notifyPlayersUpdate();
+
+          }
         }
       })
     );
@@ -163,7 +185,6 @@ export class TableGameComponent implements OnInit, OnDestroy {
         }
       });
     }
-    console.log("pasando por get overlay " ,this.currentUserVote, player.userId, this.gameCompl)
     if (this.currentUserVote.vote !== null && this.currentUserVote.id == player.userId && !this.gameCompl) {
       const color = 'rgba(219, 96, 213, 0.788)';
       if (player.overlay !== color) {
@@ -215,7 +236,6 @@ export class TableGameComponent implements OnInit, OnDestroy {
     if (this.isPlayerAssigned(user)) {
       return;
     }
-
     const unassignedPlayer = this.players
       .filter(player => !player.assigned)
       .sort((a, b) => a.order - b.order)[0];
@@ -226,6 +246,7 @@ export class TableGameComponent implements OnInit, OnDestroy {
       unassignedPlayer.rol = user.rol;
       unassignedPlayer.userId=user.id;
       this.saveTableState();
+      this.userName=user.name;
     }
   }
 
@@ -236,6 +257,10 @@ export class TableGameComponent implements OnInit, OnDestroy {
 
   getPlayerByID(id: string) {
     return this.players.find(player => player.id === id);
+  }
+
+  getPlayerByUserId(id:string){
+    return this.players.find(player => player.userId ===id);
   }
 
   getAssignedPlayers(): {id: string, name: string}[] {
@@ -251,5 +276,37 @@ export class TableGameComponent implements OnInit, OnDestroy {
     }));
     this.saveTableState();
     this.changeDetectorRef.detectChanges();
+  }
+
+  isAdmin():boolean{
+    if(this.userName && this.gameId){
+      return this.gameService.isAdminUser(this.gameId, this.userName);
+    }
+    return false;
+  }
+
+  showAdminTransferTooltip(position: string) {
+    if (this.isAdmin()) {
+      this.adminTransferOptions = {};
+      this.adminTransferOptions[position] = true;
+
+      setTimeout(() => {
+        this.showAdminTransferOption = false;
+      }, 5000);
+    }
+  }
+  hideAdminTransferTooltip(position: string) {
+    this.adminTransferOptions[position] = false;
+  }
+
+  passAdmin(position: string):void{
+    this.hideAdminTransferTooltip(position);
+    const user=this.getPlayerByID(position);
+    if(user?.userId && this.gameId){
+      this.gameService.changeAdmin(user.userId, this.gameId)
+      this.gameCommunicationService.notifyAdminChange(user.userId, this.gameId);
+      this.notifyPlayersUpdate();
+    }
+    this.saveTableState();
   }
 }

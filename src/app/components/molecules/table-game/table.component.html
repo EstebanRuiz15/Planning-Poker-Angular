@@ -3,16 +3,39 @@
     <ng-container *ngIf="getPlayerByID('side-top-left')?.rol === 'player'">
       <app-card
          [title]="getPlayerForPosition('side-top-left') || ''"
-         [overlay]="getPlayerCardOverlay('side-top-left').overlay"
-         [voted]="getPlayerCardOverlay('side-top-left').vote">
+        [adminTransferOptions]="adminTransferOptions['side-top-left']"
+        [overlay]="getPlayerCardOverlay('side-top-left').overlay"
+         [voted]="getPlayerCardOverlay('side-top-left').vote"
+         [userRole]="isAdmin()"
+         (onClick)="passAdmin('side-top-left')"
+        (mouseenter)="showAdminTransferTooltip('side-top-left')"
+        (mouseleave)="hideAdminTransferTooltip('side-top-left')"
+         (click)="isAdmin() && passAdmin('side-top-left')"
+        >
+          <div
+            *ngIf="adminTransferOptions['side-top-left']"
+            class="admin-transfer-tooltip"
+          >
+            🔑 Pasar permisos de admin
+          </div>
       </app-card>
     </ng-container>
     <ng-container *ngIf="getPlayerByID('side-top-left')?.rol === 'viwer'">
       <section class="circle-container">
-        <div class="circle">
+        <div class="circle" [ngClass]="{ 'interactive': isAdmin(), 'cursor-pointer': isAdmin(),'hover:bg-gray-200': isAdmin() }"
+        (mouseenter)="isAdmin() && showAdminTransferTooltip('side-top-left')"
+          (click)="isAdmin() && passAdmin('side-top-left')"
+          (mouseleave)=" isAdmin() &&  hideAdminTransferTooltip('side-top-left')" >
+
           <span class="circle-text">
             {{ getPlayerByID('side-top-left')?.name?.slice(0, 2) }}
           </span>
+          <div
+          *ngIf="adminTransferOptions['side-top-left']"
+          class="admin-transfer-tooltip"
+        >
+        🔑 Pasar permisos de admin
+        </div>
         </div>
         <div class="circle-name">
           {{ getPlayerByID('side-top-left')?.name }}
@@ -22,10 +45,19 @@
 
     <ng-container *ngIf="getPlayerByID('center')?.rol === 'viwer'">
       <section class="circle-container">
-        <div class="circle">
+        <div class="circle" [ngClass]="{ 'interactive': isAdmin(), 'cursor-pointer': isAdmin(),'hover:bg-gray-200': isAdmin() }"
+        (mouseenter)="isAdmin() && showAdminTransferTooltip('center')"
+          (mouseleave)=" isAdmin() &&  hideAdminTransferTooltip('center')" (click)="isAdmin() && passAdmin('center')">
+
           <span class="circle-text">
             {{ getPlayerByID('center')?.name?.slice(0, 2) }}
           </span>
+          <div
+          *ngIf="adminTransferOptions['center']"
+          class="admin-transfer-tooltip"
+        >
+        🔑 Pasar permisos de admin
+        </div>
         </div>
         <div class="circle-name">
           {{ getPlayerByID('center')?.name }}
@@ -35,24 +67,60 @@
     <ng-container *ngIf="getPlayerByID('center')?.rol === 'player'">
       <app-card
         [title]="getPlayerForPosition('center') || ''"
+        [adminTransferOptions]="adminTransferOptions['center']"
         [overlay]="getPlayerCardOverlay('center').overlay"
-        [voted]="getPlayerCardOverlay('center').vote">
+        [voted]="getPlayerCardOverlay('center').vote"
+        [userRole]="isAdmin()"
+        (onClick)="passAdmin('center')"
+        (mouseenter)="showAdminTransferTooltip('center')"
+          (mouseleave)="hideAdminTransferTooltip('center')"
+          (click)="isAdmin() && passAdmin('center')"
+        >
+          <div
+            *ngIf="adminTransferOptions['center']"
+            class="admin-transfer-tooltip"
+          >
+            🔑 Pasar permisos de admin
+          </div>
       </app-card>
     </ng-container>
 
     <ng-container *ngIf="getPlayerByID('side-top-right')?.rol === 'player'">
       <app-card
         [title]="getPlayerForPosition('side-top-right') || ''"
+        [adminTransferOptions]="adminTransferOptions['side-top-right']"
         [overlay]="getPlayerCardOverlay('side-top-right').overlay"
-        [voted]="getPlayerCardOverlay('left-side').vote">
+        [voted]="getPlayerCardOverlay('side-top-right').vote"
+        [userRole]="isAdmin()"
+        (onClick)="passAdmin('side-top-right')"
+        (mouseenter)="showAdminTransferTooltip('side-top-right')"
+          (mouseleave)="hideAdminTransferTooltip('side-top-right')"
+          (click)="isAdmin() && passAdmin('side-top-right')"
+        >
+          <div
+            *ngIf="adminTransferOptions['side-top-right']"
+            class="admin-transfer-tooltip"
+          >
+            🔑 Pasar permisos de admin
+          </div>
      </app-card>
     </ng-container>
     <ng-container *ngIf="getPlayerByID('side-top-right')?.rol === 'viwer'">
       <section class="circle-container">
-        <div class="circle">
+        <div class="circle" [ngClass]="{ 'interactive': isAdmin(), 'cursor-pointer': isAdmin(),'hover:bg-gray-200': isAdmin() }"
+        (mouseenter)="isAdmin() && showAdminTransferTooltip('side-top-right')"
+        (mouseleave)=" isAdmin() &&  hideAdminTransferTooltip('side-top-right')" (click)="isAdmin() && passAdmin('side-top-right')">
+
           <span class="circle-text">
             {{ getPlayerByID('side-top-right')?.name?.slice(0, 2) }}
           </span>
+          <div
+          *ngIf="adminTransferOptions['side-top-right']"
+          class="admin-transfer-tooltip"
+
+        >
+        🔑 Pasar permisos de admin
+        </div>
         </div>
         <div class="circle-name">
           {{ getPlayerByID('side-top-right')?.name }}
@@ -65,16 +133,39 @@
     <ng-container *ngIf="getPlayerByID('left-side')?.rol === 'player'">
       <app-card class="side-card left"
         [title]="getPlayerForPosition('left-side') || ''"
+        [adminTransferOptions]="adminTransferOptions['left-side']"
         [overlay]="getPlayerCardOverlay('left-side').overlay"
-        [voted]="getPlayerCardOverlay('left-side').vote">
+        [voted]="getPlayerCardOverlay('left-side').vote"
+        [userRole]="isAdmin()"
+        (onClick)="passAdmin('left-side')"
+        (mouseenter)="showAdminTransferTooltip('left-side')"
+        (mouseleave)="hideAdminTransferTooltip('left-side')"
+        (click)="isAdmin() && passAdmin('left-side')"
+        >
+          <div
+            *ngIf="adminTransferOptions['left-side']"
+            class="admin-transfer-tooltip"
+          >
+            🔑 Pasar permisos de admin
+          </div>
+
      </app-card>
     </ng-container>
     <ng-container *ngIf="getPlayerByID('left-side')?.rol === 'viwer'">
       <section class="circle-container-left">
-        <div class="circle">
+        <div class="circle" [ngClass]="{ 'interactive': isAdmin(), 'cursor-pointer': isAdmin(),'hover:bg-gray-200': isAdmin() }"
+        (mouseenter)="isAdmin() && showAdminTransferTooltip('left-side')"
+        (mouseleave)=" isAdmin() &&  hideAdminTransferTooltip('left-side')" (click)="isAdmin() && passAdmin('left-side')">
+
           <span class="circle-text">
             {{ getPlayerByID('left-side')?.name?.slice(0, 2) }}
           </span>
+          <div
+          *ngIf="adminTransferOptions['left-side']"
+          class="admin-transfer-tooltip"
+        >
+        🔑 Pasar permisos de admin
+        </div>
         </div>
         <div class="circle-name">
           {{ getPlayerByID('left-side')?.name }}
@@ -91,16 +182,37 @@
     <ng-container *ngIf="getPlayerByID('right-side')?.rol === 'player'">
       <app-card class="side-card right"
         [title]="getPlayerForPosition('right-side') || ''"
+        [adminTransferOptions]="adminTransferOptions['right-side']"
         [overlay]="getPlayerCardOverlay('right-side').overlay"
-        [voted]="getPlayerCardOverlay('right-side').vote">
+        [voted]="getPlayerCardOverlay('right-side').vote"
+        [userRole]="isAdmin()"
+        (onClick)="passAdmin('right-side')"
+        (mouseenter)="showAdminTransferTooltip('right-side')"
+          (mouseleave)="hideAdminTransferTooltip('right-side')"
+          (click)="isAdmin() && passAdmin('right-side')"
+        >
+          <div
+            *ngIf="adminTransferOptions['right-side']"
+            class="admin-transfer-tooltip"
+          >
+            🔑 Pasar permisos de admin
+          </div>
      </app-card>
     </ng-container>
     <ng-container *ngIf="getPlayerByID('right-side')?.rol === 'viwer'">
       <section class="circle-container-right">
-        <div class="circle">
+        <div class="circle" [ngClass]="{ 'interactive': isAdmin(), 'cursor-pointer': isAdmin(),'hover:bg-gray-200': isAdmin() }"
+        (mouseenter)="isAdmin() && showAdminTransferTooltip('right-side')"
+        (mouseleave)=" isAdmin() &&  hideAdminTransferTooltip('right-side')" (click)="isAdmin() && passAdmin('right-side')">
           <span class="circle-text">
             {{ getPlayerByID('right-side')?.name?.slice(0, 2) }}
           </span>
+          <div
+          *ngIf="adminTransferOptions['right-side']"
+          class="admin-transfer-tooltip"
+        >
+        🔑 Pasar permisos de admin
+        </div>
         </div>
         <div class="circle-name">
           {{ getPlayerByID('right-side')?.name }}
@@ -114,16 +226,37 @@
       <ng-container *ngIf="getPlayerByID(id)?.rol === 'player'">
         <app-card
           [title]="getPlayerForPosition(id) || ''"
+          [adminTransferOptions]="adminTransferOptions[id]"
           [overlay]="getPlayerCardOverlay(id).overlay"
-          [voted]="getPlayerCardOverlay(id).vote">
+          [voted]="getPlayerCardOverlay(id).vote"
+          [userRole]="isAdmin()"
+          (mouseenter)="showAdminTransferTooltip(id)"
+          (mouseleave)="hideAdminTransferTooltip(id)"
+          (click)="isAdmin() && passAdmin(id)"
+        >
+          <div
+            *ngIf="adminTransferOptions[id]"
+            class="admin-transfer-tooltip"
+          >
+            🔑 Pasar permisos de admin
+          </div>
+
        </app-card>
       </ng-container>
       <ng-container *ngIf="getPlayerByID(id)?.rol === 'viwer'">
         <section class="circle-container">
-          <div class="circle">
+          <div class="circle" [ngClass]="{ 'interactive': isAdmin(), 'cursor-pointer': isAdmin(),'hover:bg-gray-200': isAdmin() }"
+          (mouseenter)="isAdmin() && showAdminTransferTooltip(id)"
+        (mouseleave)=" isAdmin() &&  hideAdminTransferTooltip(id)" (click)="isAdmin() && passAdmin(id)">
             <span class="circle-text">
               {{ getPlayerByID(id)?.name?.slice(0, 2) }}
             </span>
+            <div
+          *ngIf="adminTransferOptions[id]"
+          class="admin-transfer-tooltip"
+        >
+        🔑 Pasar permisos de admin
+        </div>
           </div>
           <div class="circle-name">
             {{ getPlayerByID(id)?.name }}
