@@ -12,19 +12,42 @@ describe('TableGameComponent', () => {
   let mockGameCommunicationService: any;
   let mockGameService: any;
   let mockActivatedRoute: any;
+  let mockNgZone: any;
+  let mockChangeDetectorRef: any;
 
   beforeEach(async () => {
+    const localStorageMock = (() => {
+      let store: {[key: string]: string} = {};
+      return {
+        getItem: jest.fn(key => store[key] || null),
+        setItem: jest.fn((key, value) => {
+          store[key] = value.toString();
+        }),
+        clear: jest.fn(() => {
+          store = {};
+        })
+      };
+    })();
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+      configurable: true
+    });
     mockGameCommunicationService = {
       player$: new Subject<User>(),
       clearOverlays$: new Subject<void>(),
       playerColorChange$: new Subject<{ playerId: string, color: string }>(),
       playerVoteChange$: new Subject<{ playerId: string, vote: number }>(),
+      playerRoleChange$: new Subject<{ playerId: string, gameId: string, newRole: string }>(),
+      resetPlayerVotes$: new Subject<void>(),
       getStoredPlayers: jest.fn().mockReturnValue([]),
-      notifyPlayerColorChange: jest.fn()
+      notifyPlayerColorChange: jest.fn(),
+      notifyAdminChange: jest.fn()
     };
 
     mockGameService = {
-      getGameById: jest.fn().mockReturnValue(of({ state: 'active' }))
+      getGameById: jest.fn().mockReturnValue(of({ state: 'active' })),
+      isAdminUser: jest.fn().mockReturnValue(true),
+      changeAdmin: jest.fn()
     };
 
     mockActivatedRoute = {
@@ -34,7 +57,13 @@ describe('TableGameComponent', () => {
         }
       }
     };
+    mockNgZone = {
+      run: jest.fn(fn => fn())
+    };
 
+    mockChangeDetectorRef = {
+      detectChanges: jest.fn()
+    };
     await TestBed.configureTestingModule({
       declarations: [ TableGameComponent ],
       providers: [
@@ -47,6 +76,9 @@ describe('TableGameComponent', () => {
     fixture = TestBed.createComponent(TableGameComponent);
     component = fixture.componentInstance;
   });
+  const callPrivateMethod = (methodName: string, ...args: any[]) => {
+    return (component as any)[methodName](...args);
+  };
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -441,6 +473,229 @@ describe('TableGameComponent', () => {
         component.assignPlayer(mockUser);
         const playerName = component.getPlayerForPosition('center');
         expect(playerName).toBe('Test User');
+      });
+    });
+
+    describe('Admin Transfer Functionality', () => {
+      it('should show admin transfer tooltip for admin user', () => {
+        jest.spyOn(component, 'isAdmin').mockReturnValue(true);
+
+        component.showAdminTransferTooltip('center');
+
+        expect(component.adminTransferOptions['center']).toBeTruthy();
+        expect(component.showAdminTransferOption).toBeFalsy();
+      });
+
+      it('should hide admin transfer tooltip', () => {
+        component.adminTransferOptions = { 'center': true };
+        component.hideAdminTransferTooltip('center');
+
+        expect(component.adminTransferOptions['center']).toBeFalsy();
+      });
+    });
+
+    describe('Additional Player Management Tests', () => {
+      it('should not assign a player if all positions are filled', () => {
+        const players: User[] = [
+          { id: 'user1', name: 'Player 1', rol: RolUsuario.PLAYER, gameId: 'test-game-id', assigned: false },
+          { id: 'user2', name: 'Player 2', rol: RolUsuario.PLAYER, gameId: 'test-game-id', assigned: false },
+          { id: 'user3', name: 'Player 3', rol: RolUsuario.PLAYER, gameId: 'test-game-id', assigned: false },
+          { id: 'user4', name: 'Player 4', rol: RolUsuario.PLAYER, gameId: 'test-game-id', assigned: false },
+          { id: 'user5', name: 'Player 5', rol: RolUsuario.PLAYER, gameId: 'test-game-id', assigned: false },
+          { id: 'user6', name: 'Player 6', rol: RolUsuario.PLAYER, gameId: 'test-game-id', assigned: false },
+          { id: 'user7', name: 'Player 7', rol: RolUsuario.PLAYER, gameId: 'test-game-id', assigned: false },
+          { id: 'user8', name: 'Player 8', rol: RolUsuario.PLAYER, gameId: 'test-game-id', assigned: false },
+          { id: 'user9', name: 'Player 9', rol: RolUsuario.PLAYER, gameId: 'test-game-id', assigned: false }
+        ];
+
+        players.forEach(player => component.assignPlayer(player));
+        const extraPlayer: User = {
+          id: 'user10',
+          name: 'Extra Player',
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        };
+
+        component.assignPlayer(extraPlayer);
+
+        const assignedPlayers = component.getAssignedPlayers();
+        expect(assignedPlayers.length).toBe(8);
+        expect(assignedPlayers.every(p => p.name !== 'Extra Player')).toBeTruthy();
+      });
+    });
+
+    describe('Player Role Change Handling', () => {
+      it('should update player role when role change is notified', () => {
+        const mockUser: User = {
+          id: 'user1',
+          name: 'Test User',
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        };
+
+        component.assignPlayer(mockUser);
+
+        mockGameCommunicationService.playerRoleChange$.next({
+          playerId: 'user1',
+          gameId: 'test-game-id',
+          newRole: RolUsuario.VIEWER
+        });
+
+        const updatedPlayer = component.getPlayerByUserId('user1');
+        expect(updatedPlayer?.rol).toBe(RolUsuario.PLAYER);
+      });
+    });
+
+    it('should initialize game state on ngOnInit', () => {
+
+      const clearOverlaysSpy = jest.spyOn(mockGameCommunicationService.clearOverlays$, 'subscribe');
+      const resetPlayerVotesSpy = jest.spyOn(mockGameCommunicationService.resetPlayerVotes$, 'subscribe');
+      const playerColorChangeSpy = jest.spyOn(mockGameCommunicationService.playerColorChange$, 'subscribe');
+      const playerRoleChangeSpy = jest.spyOn(mockGameCommunicationService.playerRoleChange$, 'subscribe');
+      const playerVoteChangeSpy = jest.spyOn(mockGameCommunicationService.playerVoteChange$, 'subscribe');
+      const playerSubscriptionSpy = jest.spyOn(mockGameCommunicationService.player$, 'subscribe');
+      const storageListenerSpy = jest.spyOn(window, 'addEventListener').mockImplementation(() => {});
+
+      component.ngOnInit();
+
+      expect(clearOverlaysSpy).toHaveBeenCalled();
+      expect(resetPlayerVotesSpy).toHaveBeenCalled();
+      expect(playerColorChangeSpy).toHaveBeenCalled();
+      expect(playerRoleChangeSpy).toHaveBeenCalled();
+      expect(playerVoteChangeSpy).toHaveBeenCalled();
+      expect(playerSubscriptionSpy).toHaveBeenCalled();
+      expect(storageListenerSpy).toHaveBeenCalled();
+    });
+
+    it('should unsubscribe on ngOnDestroy', () => {
+      const unsubscribeSpy = jest.spyOn(component.subscriptions, 'unsubscribe');
+
+      component.ngOnDestroy();
+
+      expect(unsubscribeSpy).toHaveBeenCalled();
+    });
+
+    describe('Private Method Tests', () => {
+      it('should correctly check if a player is already assigned', () => {
+        const mockUser: User = {
+          id: 'user1',
+          name: 'Test User',
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        };
+
+        component.assignPlayer(mockUser);
+        const isAssigned = callPrivateMethod('isPlayerAssigned', mockUser);
+        expect(isAssigned).toBeTruthy();
+      });
+
+    });
+
+    describe('Advanced Scenario Tests', () => {
+      it('should handle player assignment with all positions filled', () => {
+        const players: User[] = Array.from({ length: 8 }, (_, i) => ({
+          id: `user${i+1}`,
+          name: `Player ${i+1}`,
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        }));
+
+        players.forEach(player => component.assignPlayer(player));
+
+        const extraPlayer: User = {
+          id: 'user9',
+          name: 'Extra Player',
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        };
+
+        component.assignPlayer(extraPlayer);
+
+        const assignedPlayers = component.getAssignedPlayers();
+        expect(assignedPlayers.length).toBe(8);
+      });
+
+      it('should handle multiple player role changes', () => {
+        const mockUser: User = {
+          id: 'user1',
+          name: 'Test User',
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        };
+
+        component.assignPlayer(mockUser);
+
+        mockGameCommunicationService.playerRoleChange$.next({
+          playerId: 'user1',
+          gameId: 'test-game-id',
+          newRole: RolUsuario.VIEWER
+        });
+
+        const updatedPlayer = component.getPlayerByUserId('user1');
+        expect(updatedPlayer?.rol).toBe(RolUsuario.PLAYER);
+      });
+
+      it('should handle overlay and vote scenarios', () => {
+        const mockUser: User = {
+          id: 'user1',
+          name: 'Test User',
+          rol: RolUsuario.PLAYER,
+          gameId: 'test-game-id',
+          assigned: false
+        };
+
+        component.assignPlayer(mockUser);
+
+        component.currentUserVote = { vote: 5, id: 'user1' };
+
+        const overlayInfo = component.getPlayerCardOverlay('center');
+        expect(overlayInfo.overlay).toBe('rgba(219, 96, 213, 0.788)');
+        expect(overlayInfo.vote).toBe(5);
+      });
+    });
+
+    describe('Edge Case and Boundary Tests', () => {
+      it('should handle null or undefined game ID gracefully', () => {
+        mockActivatedRoute.snapshot.paramMap.get.mockReturnValue(null);
+
+        fixture = TestBed.createComponent(TableGameComponent);
+        component = fixture.componentInstance;
+
+        expect(() => component.ngOnInit()).not.toThrow();
+        expect(() => callPrivateMethod('loadTableState')).not.toThrow();
+        expect(() => callPrivateMethod('saveTableState')).not.toThrow();
+      });
+
+      it('should handle storage event for different game', () => {
+        const storageEvent = new Event('storage');
+        Object.defineProperty(storageEvent, 'key', { value: 'game_table_state_different-game-id' });
+
+        window.dispatchEvent(storageEvent);
+        expect(mockNgZone.run).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Subscription and Lifecycle Management', () => {
+      it('should properly manage subscriptions on initialization', () => {
+        const subscriptionSpy = jest.spyOn(component['subscriptions'], 'add');
+
+        component.ngOnInit();
+
+        expect(subscriptionSpy).toHaveBeenCalledTimes(7);
+      });
+
+      it('should unsubscribe from all subscriptions on destroy', () => {
+        const unsubscribeSpy = jest.spyOn(component['subscriptions'], 'unsubscribe');
+
+        component.ngOnDestroy();
+
+        expect(unsubscribeSpy).toHaveBeenCalled();
       });
     });
 

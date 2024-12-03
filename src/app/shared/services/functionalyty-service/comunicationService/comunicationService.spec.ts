@@ -232,5 +232,69 @@ describe('GameCommunicationService', () => {
     expect(voteChangeNotified).toBe(true);
   });
 
+  it('should notify player role change', () => {
+    const playerId = '1';
+    const gameId = 'game1';
+    const newRole = RolUsuario.ADMIN;
+
+    let roleChangeNotified = false;
+
+    service.playerRoleChange$.subscribe(({ playerId: id, gameId: gId, newRole: role }) => {
+      if (id === playerId && gId === gameId && role === newRole) {
+        roleChangeNotified = true;
+      }
+    });
+
+    service.notifyPlayerRoleChange(playerId, gameId, newRole);
+
+    expect(roleChangeNotified).toBe(true);
+  });
+
+  it('should notify admin change and store the change in localStorage', () => {
+    const playerId = '1';
+    const gameId = 'game1';
+
+    let adminChangeNotified = false;
+
+    service.adminChange$.subscribe(({ playerId: id, gameId: gId }) => {
+      if (id === playerId && gId === gameId) {
+        adminChangeNotified = true;
+      }
+    });
+
+    service.notifyAdminChange(playerId, gameId);
+
+    expect(adminChangeNotified).toBe(true);
+
+    const adminChangeData = localStorage.getItem(`admin_change_${gameId}`);
+    expect(adminChangeData).toBeTruthy();
+    const parsedData = JSON.parse(adminChangeData!);
+    expect(parsedData.playerId).toBe(playerId);
+    expect(parsedData.gameId).toBe(gameId);
+  });
+
+  it('should notify reset player votes', () => {
+    let resetVotesNotified = false;
+
+    service.resetPlayerVotes$.subscribe(() => {
+      resetVotesNotified = true;
+    });
+
+    service.resetPlayerVotesSubject.next();
+
+    expect(resetVotesNotified).toBe(true);
+  });
+
+  it('should reset player votes and notify observers', () => {
+    const gameId = 'game1';
+    const votes = { '1': 5, '2': 3 };
+
+    service.updateGameVotes(gameId, votes);
+    service.resetGameState(gameId);
+
+    service.gameVotes$.subscribe(votes => {
+      expect(votes).toEqual({ '1': 0, '2': 0 });
+    });
+  });
 
 });

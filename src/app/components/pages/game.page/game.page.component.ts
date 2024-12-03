@@ -6,7 +6,7 @@ import { GameCommunicationService } from 'src/app/shared/services/functionalyty-
 import { Observable, Subscription } from 'rxjs';
 import { ToastService } from 'src/app/shared/services/toast/toast.service';
 import { SERVICE_ERROR } from 'src/app/shared/Constants';
-import { faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faTableColumns } from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-game-page',
@@ -30,7 +30,9 @@ export class GamePageComponent implements OnInit, OnDestroy {
   faCheck = faCheck;
   isRoleChangeVisible = false;
   currentUserRole: string = '';
-
+  faTableColumns = faTableColumns;
+  isScoringModeVisible = false;
+  scoringMode: 'fibonacci' | 'oneToTen' | 'twoToTwenty' = 'fibonacci';
   private subscriptions: Subscription = new Subscription();
 
   constructor(
@@ -44,6 +46,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.fibonacciNumbers = this.generateCardNumbers();
     window.addEventListener('storage', (event) => {
       if (event.key && event.key.startsWith('game_complete_') && event.newValue) {
         const gameCompleteData = JSON.parse(event.newValue);
@@ -82,7 +85,6 @@ export class GamePageComponent implements OnInit, OnDestroy {
 
     this.subscriptions.add(
       this.gameCommunicationService.adminChange$.subscribe(() => {
-        console.log("change admin in game service")
         this.isAdmin=false;
         this.checkAdminStatus();
         this.changeDetectorRef.detectChanges();
@@ -105,6 +107,17 @@ export class GamePageComponent implements OnInit, OnDestroy {
         }
       })
     );
+
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'scoring_mode_change' && event.newValue) {
+        const modeChangeData = JSON.parse(event.newValue);
+        if (modeChangeData.gameId === this.gameId) {
+          this.scoringMode = modeChangeData.mode;
+          this.fibonacciNumbers = this.generateCardNumbers();
+          this.changeDetectorRef.detectChanges();
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -113,7 +126,6 @@ export class GamePageComponent implements OnInit, OnDestroy {
 
   loadUserRole(): void {
     const currentUser = this.gameService.getCurrentUser(this.gameId!, this.userName!);
-    console.log("current user is: ", currentUser)
   if (currentUser && currentUser.rol) {
     this.currentUserRole = currentUser.rol.toLowerCase();
   } else {
@@ -186,7 +198,6 @@ export class GamePageComponent implements OnInit, OnDestroy {
     const isStillAdmin = this.gameService.isAdminUser(this.gameId, this.userName!);
     const playerCount = this.gameService.getGamePlayerCount(this.gameId, RolUsuario.PLAYER);
     const votedCount = this.gameVotes ? Object.keys(this.gameVotes).length : 0;
-    console.log("can revealt votes: ", isStillAdmin, playerCount, votedCount, this.gameState)
 
     return isStillAdmin && playerCount === votedCount && this.gameState === 'voted';
   }
@@ -244,6 +255,21 @@ export class GamePageComponent implements OnInit, OnDestroy {
     }
     return fib;
   }
+
+  generateCardNumbers(): number[] {
+    const mode = this.scoringMode;
+    switch(mode) {
+      case 'fibonacci':
+        return this.generateFibonacciUpTo89();
+      case 'oneToTen':
+        return Array.from({length: 10}, (_, i) => i + 1);
+      case 'twoToTwenty':
+        return Array.from({length: 10}, (_, i) => (i + 1) * 2);
+      default:
+        return this.generateFibonacciUpTo89();
+    }
+  }
+
   getAverageVote(): number {
     const votes = Object.values(this.gameVotes).filter(vote => typeof vote === 'number') as number[];
     if (votes.length === 0) return 0;
@@ -276,7 +302,6 @@ export class GamePageComponent implements OnInit, OnDestroy {
   }
 
   changeRole(): void {
-    console.log("esto es game votes", this.gameVotes)
     if(this.gameVotes || Object.keys(this.gameVotes).length > 0){
       this.toastService.showToast('Ya inicio la votación, no se puede cambiar', 'error');
 
@@ -293,7 +318,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
                 this.gameId,
                 currentUser.rol
               );
-      this.toastService.showToast('Rol cambiado con éxito', 'success');
+      this.toastService.showToast('cambio de rol exitoso', 'success');
     }
   }
 
@@ -312,12 +337,38 @@ export class GamePageComponent implements OnInit, OnDestroy {
     }
   }
 
+  toggleScoringMode(): void {
+    if (this.gameVotes && Object.keys(this.gameVotes).length > 0) {
+      this.toastService.showToast('No se puede cambiar el modo durante la votación', 'error');
+      return;
+    }
+    this.isScoringModeVisible = !this.isScoringModeVisible;
+  }
+
+  changeScoringMode(mode: 'fibonacci' | 'oneToTen' | 'twoToTwenty'): void {
+    if (this.gameVotes && Object.keys(this.gameVotes).length > 0) {
+      this.toastService.showToast('No se puede cambiar el modo durante la votación', 'error');
+      return;
+    }
+
+    this.scoringMode = mode;
+    this.fibonacciNumbers = this.generateCardNumbers();
+    localStorage.setItem(`scoringMode_${this.gameId}`, mode);
+    localStorage.setItem('scoring_mode_change', JSON.stringify({
+      gameId: this.gameId,
+      mode: mode,
+      timestamp: Date.now()
+    }));
+    this.isScoringModeVisible = false;
+    this.changeDetectorRef.detectChanges();
+  }
+
   private resetAllGame(): void {
 
     this.isGameComplete=false;
     this.gameState="waiting";
     Object.keys(this.gameVotes).forEach(userId => {
-      this.gameVotes[userId] = null;
+      this.gameVotes = {};
     });
     this.currentUserVote = null;
     this.changeDetectorRef.detectChanges();

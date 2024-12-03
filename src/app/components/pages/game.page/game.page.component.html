@@ -5,6 +5,36 @@
   <h1 class="game-name">{{ gameName }}</h1>
 
   <header class="header-buttons">
+    <button
+      *ngIf="isAdmin"
+      class="custom-button scoring-mode-button"
+      (click)="toggleScoringMode()"
+    >
+      <fa-icon [icon]="faTableColumns"></fa-icon> Modo de Puntuación
+    </button>
+    <nav
+      *ngIf="isScoringModeVisible"
+      class="scoring-mode-dropdown"
+    >
+      <p
+        (click)="changeScoringMode('fibonacci')"
+        [ngClass]="{'selected': scoringMode === 'fibonacci'}"
+      >
+        Fibonacci
+      </p>
+      <p
+        (click)="changeScoringMode('oneToTen')"
+        [ngClass]="{'selected': scoringMode === 'oneToTen'}"
+      >
+        1 en 1 hasta 10
+      </p>
+      <p
+        (click)="changeScoringMode('twoToTwenty')"
+        [ngClass]="{'selected': scoringMode === 'twoToTwenty'}"
+      >
+        2 en 2 hasta 20
+      </p>
+    </nav>
     <div class="user-circle" *ngIf="userName" (click)="toggleRoleChange()" [ngClass]="{'show': isRoleChangeVisible}">
       <span>{{ getInitials(userName) }}</span>
     </div>
