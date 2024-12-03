@@ -181,14 +181,10 @@ export class GameService {
 
     if(user)
     if (user.rol == RolUsuario.PLAYER) {
-      console.log("cambiando a viwer")
       user.rol = RolUsuario.VIEWER;
     } else if (user.rol == RolUsuario.VIEWER) {
-      console.log("cambiando a player")
       user.rol = RolUsuario.PLAYER;
     }
-
-    console.log("jugador queda asi: ", user)
     this.saveGamesToStorage();
   }
 
@@ -207,12 +203,10 @@ export class GameService {
     if (!user || !admin) {
       throwError(() => new Error('User not found in game'));
     }
-    console.log("usuarios a cambiar admin: ", admin, "user: ",user)
     if(admin && user){
     admin.admin=false;
     user.admin=true;
     this.saveGamesToStorage();
-    console.log("usuarios a cambiar admin: ", admin, "user: ",user,"juego: ", game)
     }
    }
   }

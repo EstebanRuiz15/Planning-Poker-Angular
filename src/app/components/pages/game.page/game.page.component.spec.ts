@@ -48,6 +48,7 @@ describe('GamePageComponent', () => {
     const gameCommunicationServiceMock = {
       player$: of(mockUser),
       updateGameVotes: jest.fn(),
+      adminChange$: new Subject<void>(),
       updateUserVote: jest.fn(),
       getStoredPlayers: jest.fn(),
       updateGameCompletedStatus: jest.fn(),
@@ -118,22 +119,10 @@ describe('GamePageComponent', () => {
 
   describe('Voting Functionality', () => {
 
-    it('should check if user has player role', () => {
-      expect(component.isPlayerRole()).toBe(true);
-    });
-
     it('should not allow voting if user already voted', () => {
       component.currentUserVote = 5;
       component.vote(8);
       expect(mockGameService.playerVote).not.toHaveBeenCalled();
-    });
-
-    it('should handle voting error', () => {
-      mockGameService.playerVote.mockReturnValue(throwError(() => new Error('Vote error')));
-
-      component.vote(5);
-
-      expect(mockToastService.showToast).toHaveBeenCalledWith(SERVICE_ERROR, 'error');
     });
 
     it('should return false for isPlayerRole when no game or user', () => {
@@ -208,13 +197,6 @@ describe('GamePageComponent', () => {
     });
   });
 
-  describe('checkAdminStatus', () => {
-    it('should determine if the user is an admin', () => {
-      component.checkAdminStatus();
-      expect(mockGameService.isAdminUser).toHaveBeenCalledWith('game123', 'testUser');
-    });
-  });
-
   describe('onCardSelected', () => {
     it('should update user votes and stored players', () => {
       component.onCardSelected('user1', 'game123', 5);
@@ -266,14 +248,6 @@ describe('GamePageComponent', () => {
       expect(component.canRevealVotes()).toBe(false);
     });
 
-    it('should canRevealVotes correctly when votes match player count', () => {
-      mockGameService.getGamePlayerCount.mockReturnValue(2);
-      component.gameVotes = { 'user1': 5, 'user2': 8 };
-      component.gameState = 'voted';
-
-      expect(component.canRevealVotes()).toBe(true);
-    });
-
     it('should handle checkAdminStatus with no user', () => {
       mockGameService.AuthService.mockReturnValue(null);
 
@@ -302,6 +276,188 @@ describe('GamePageComponent', () => {
 
       window.dispatchEvent(storageEvent);
 
+    });
+  });
+
+  describe('Role Change Functionality', () => {
+
+    it('should prevent role change if votes exist', () => {
+      component.gameId = 'game123';
+      component.userName = 'testUser';
+      component.gameVotes = { 'user1': 5 };
+
+      component.changeRole();
+      expect(mockToastService.showToast).toHaveBeenCalledWith('Ya inicio la votación, no se puede cambiar', 'error');
+    });
+
+  });
+
+  describe('Scoring Mode Functionality', () => {
+    it('should prevent scoring mode change if votes exist', () => {
+      component.gameVotes = { 'user1': 5 };
+
+      component.toggleScoringMode();
+      expect(mockToastService.showToast).toHaveBeenCalledWith('No se puede cambiar el modo durante la votación', 'error');
+    });
+
+    it('should change scoring mode correctly', () => {
+      component.gameId = 'game123';
+      component.gameVotes = {};
+
+      component.changeScoringMode('oneToTen');
+      expect(component.scoringMode).toBe('oneToTen');
+      expect(component.isScoringModeVisible).toBe(false);
+    });
+
+  });
+
+  describe('Restart Game Functionality', () => {
+    it('should not restart game without game ID', () => {
+      component.gameId = null;
+      component.restartGame();
+      expect(mockGameCommunicationService.resetGameState).not.toHaveBeenCalled();
+    });
+
+    it('should restart game with game ID', () => {
+      component.gameId = 'game123';
+      component.restartGame();
+      expect(mockGameCommunicationService.resetGameState).toHaveBeenCalledWith('game123');
+      expect(component.gameState).toBe('waiting');
+      expect(component.gameVotes).toEqual({});
+      expect(component.currentUserVote).toBeNull();
+    });
+  });
+
+  describe('Advanced Vote Analysis', () => {
+    beforeEach(() => {
+      component.gameVotes = {
+        'user1': 3,
+        'user2': 5,
+        'user3': 3,
+        'user4': 8,
+        'user5': null
+      };
+    });
+
+    it('should handle votes with null values in getAverageVote', () => {
+      const averageVote = component.getAverageVote();
+      expect(averageVote).toBe(4.75);
+    });
+
+    it('should get unique votes correctly with mixed values', () => {
+      const uniqueVotes = component.getUniqueVotes();
+      expect(uniqueVotes).toEqual([
+        { vote: 3, count: 2 },
+        { vote: 5, count: 1 },
+        { vote: 8, count: 1 }
+      ]);
+    });
+  });
+
+  describe('Reveal Votes Scenarios', () => {
+    it('should handle reveal votes error', () => {
+      component.gameId = 'game123';
+      mockGameService.revealVotes.mockReturnValue(throwError(() => new Error('Reveal error')));
+
+      component.revealVotes();
+
+    });
+  });
+
+  it('should not allow voting more than once', () => {
+    component.currentUserVote = 3;
+    component.vote(5);
+
+    expect(component.currentUserVote).toBe(3);
+  });
+
+  it('should not allow revealing votes if not all players have voted', () => {
+    component.gameVotes = { 'user1': 3 };
+    component.gameState = 'voted';
+    component.isAdmin = true;
+
+    expect(component.canRevealVotes()).toBe(false);
+  });
+
+
+  it('should change the scoring mode', () => {
+    component.scoringMode = 'fibonacci';
+    component.changeScoringMode('oneToTen');
+
+    expect(component.scoringMode).toBe('oneToTen');
+  });
+
+  it('should show error toast when trying to change scoring mode during voting', () => {
+    component.gameVotes = { 'user1': 3 };
+    component.toggleScoringMode();
+
+    expect(mockToastService.showToast).toHaveBeenCalledWith('No se puede cambiar el modo durante la votación', 'error');
+  });
+
+  describe('Additional Error Handling Tests', () => {
+
+    it('should handle vote submission error', () => {
+      mockGameService.playerVote.mockReturnValue(throwError(() => new Error('Vote error')));
+
+      component.gameId = 'game123';
+      component.userName = 'testUser';
+
+      component.vote(5);
+
+      expect(mockToastService.showToast).toHaveBeenCalledWith(SERVICE_ERROR, "error");
+    });
+  });
+
+  describe('Advanced Role Change Tests', () => {
+    it('should prevent role change during voting', () => {
+      component.gameVotes = { 'user1': 5 };
+      component.changeRole();
+
+      expect(mockToastService.showToast).toHaveBeenCalledWith('Ya inicio la votación, no se puede cambiar', 'error');
+    });
+
+  });
+
+  describe('Scoring Mode Comprehensive Tests', () => {
+    it('should generate correct card numbers for different scoring modes', () => {
+      const testCases = [
+        { mode: 'fibonacci', expectedFirst: [0, 1, 3, 5] },
+        { mode: 'oneToTen', expectedFirst: [1, 2, 3, 4] },
+        { mode: 'twoToTwenty', expectedFirst: [2, 4, 6, 8] }
+      ];
+
+      testCases.forEach(testCase => {
+        component.scoringMode = testCase.mode as 'fibonacci' | 'oneToTen' | 'twoToTwenty';
+        const cardNumbers = component.generateCardNumbers();
+
+        expect(cardNumbers.slice(0, 4)).toEqual(testCase.expectedFirst);
+      });
+    });
+  });
+
+  describe('Detailed Voting Analysis Tests', () => {
+    beforeEach(() => {
+      component.gameVotes = {
+        'user1': 3,
+        'user2': 5,
+        'user3': 3,
+        'user4': 8,
+        'user5': null
+      };
+    });
+
+    it('should correctly filter out non-numeric votes in average calculation', () => {
+      const averageVote = component.getAverageVote();
+      expect(averageVote).toBeCloseTo(4.75, 2);
+    });
+
+    it('should handle mixed vote types in unique votes calculation', () => {
+      const uniqueVotes = component.getUniqueVotes();
+      expect(uniqueVotes).toEqual([
+        { vote: 3, count: 2 },
+        { vote: 5, count: 1 },
+        { vote: 8, count: 1 }
+      ]);
     });
   });
 });

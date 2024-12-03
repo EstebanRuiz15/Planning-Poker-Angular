@@ -13,7 +13,7 @@ describe('GameService', () => {
       providers: [GameService]
     });
     service = TestBed.inject(GameService);
-
+    localStorage.clear();
     localStorageMock = jest.spyOn(Storage.prototype, 'getItem').mockImplementation((key: string) => {
       switch (key) {
         case 'games':
@@ -344,4 +344,180 @@ describe('GameService', () => {
       }
     });
   });
+
+
+  it('should return null if user name is not found in AuthService', () => {
+    localStorageMock.mockImplementationOnce(() => null);
+    const userName = service.AuthService();
+    expect(userName).toBeNull();
+  });
+
+  it('should get the authenticated user name by game ID', () => {
+    localStorageMock.mockImplementationOnce(() => 'testUser');
+    const userName = service.AuthService('game1');
+    expect(userName).toBe('testUser');
+  });
+
+
+  it('should return false if user is not admin in isAdminUser', () => {
+    const user: User = { id: 'user1', name: 'Test User', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' };
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: [user],
+      state: 'waiting',
+      votes: {}
+    };
+
+    service['games'] = [game];
+    const isAdmin = service.isAdminUser('game1', 'NonExistentUser');
+    expect(isAdmin).toBe(false);
+  });
+
+
+  it('should handle getting current user when user is found', () => {
+    const user: User = { id: 'user1', name: 'Test User', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' };
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: [user],
+      state: 'waiting',
+      votes: {}
+    };
+
+    service['games'] = [game];
+
+    const currentUser = service.getCurrentUser('game1', 'Test User');
+    expect(currentUser).toEqual(user);
+  });
+
+  it('should handle multiple users in getCurrentUser', () => {
+    const user1: User = { id: 'user1', name: 'Test User 1', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' };
+    const user2: User = { id: 'user2', name: 'Test User 2', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' };
+
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: [user1, user2],
+      state: 'waiting',
+      votes: {}
+    };
+
+    service['games'] = [game];
+
+    const currentUser = service.getCurrentUser('game1', 'Test User 2');
+    expect(currentUser).toEqual(user2);
+  });
+
+
+  it('should correctly join game and mark user as assigned', (done) => {
+    const user: User = { id: 'user3', name: 'Test User 3', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' };
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: [{ id: 'user2', name: 'Test User 2', rol: RolUsuario.PLAYER, assigned: false, gameId: 'game1' }],
+      state: 'waiting',
+      votes: {}
+    };
+
+    service['games'] = [game];
+    service.joinGame('game1', user).subscribe((updatedGame: Game) => {
+      expect(updatedGame.players.length).toBe(2);
+      done();
+    });
+  });
+
+  it('should update user role from PLAYER to VIEWER', () => {
+    const user: User = {
+      id: 'user1',
+      name: 'Test User',
+      rol: RolUsuario.PLAYER,
+      assigned: false,
+      gameId: 'game1'
+    };
+
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: [user],
+      state: 'waiting',
+      votes: {}
+    };
+
+    service['games'] = [game];
+    service.updateUserRole('game1', 'user1');
+
+    const updatedUser = service['games'][0].players[0];
+    expect(updatedUser.rol).toBe(RolUsuario.VIEWER);
+  });
+
+  it('should update user role from VIEWER to PLAYER', () => {
+    const user: User = {
+      id: 'user1',
+      name: 'Test User',
+      rol: RolUsuario.VIEWER,
+      assigned: false,
+      gameId: 'game1'
+    };
+
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: [user],
+      state: 'waiting',
+      votes: {}
+    };
+
+    service['games'] = [game];
+    service.updateUserRole('game1', 'user1');
+
+    const updatedUser = service['games'][0].players[0];
+    expect(updatedUser.rol).toBe(RolUsuario.PLAYER);
+  });
+
+  it('should change admin from current admin to another user', () => {
+    const adminUser: User = {
+      id: 'admin',
+      name: 'Admin User',
+      rol: RolUsuario.PLAYER,
+      admin: true,
+      assigned: false,
+      gameId: 'game1'
+    };
+
+    const regularUser: User = {
+      id: 'user1',
+      name: 'Regular User',
+      rol: RolUsuario.PLAYER,
+      admin: false,
+      assigned: false,
+      gameId: 'game1'
+    };
+
+    const game: Game = {
+      id: 'game1',
+      name: 'Test Game',
+      players: [adminUser, regularUser],
+      state: 'waiting',
+      votes: {}
+    };
+
+    service['games'] = [game];
+    service.changeAdmin('user1', 'game1');
+
+    const updatedGame = service['games'][0];
+    expect(updatedGame.players.find(p => p.id === 'admin')?.admin).toBe(false);
+    expect(updatedGame.players.find(p => p.id === 'user1')?.admin).toBe(true);
+  });
+
+  it('should return 0 if game is not found when counting players', () => {
+    const playerCount = service.getGamePlayerCount('nonexistentGame', RolUsuario.PLAYER);
+    expect(playerCount).toBe(0);
+  });
+
+  it('should return null if no userName is found for specific gameId', () => {
+    const userName = service.AuthService('nonexistentGame');
+    expect(userName).toBeNull();
+  });
+
 });
