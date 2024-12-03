@@ -5,8 +5,12 @@
   <h1 class="game-name">{{ gameName }}</h1>
 
   <header class="header-buttons">
-    <div class="user-circle" *ngIf="userName">
+    <div class="user-circle" *ngIf="userName" (click)="toggleRoleChange()" [ngClass]="{'show': isRoleChangeVisible}">
       <span>{{ getInitials(userName) }}</span>
+    </div>
+    <div *ngIf="isRoleChangeVisible" class="role-change-container" [ngClass]="{'show': isRoleChangeVisible}">
+      <p *ngIf="currentUserRole === 'player'" (click)="changeRole()">Cambiar a Espectador</p>
+      <p *ngIf="currentUserRole === 'viwer'" (click)="changeRole()">Cambiar a Jugador</p>
     </div>
     <button class="custom-button" (click)="copyInvitationLink()">Invitar jugadores</button>
     <div *ngIf="linkCopied" class="confirmation-message">
