@@ -17,6 +17,7 @@ export class AppComponent implements OnInit {
     }, 200);
   }
 
+
   onInputChanged(newValue: string): void {
     console.log('Nuevo valor del input:', newValue);
   }

@@ -26,7 +26,6 @@ body {
   pointer-events: all;
   height: 70px;
   opacity: 1;
-  transition: opacity 0.3s ease;
 }
 
 .logo-container.loaded {
@@ -40,6 +39,7 @@ body {
   user-select: none;
   -webkit-user-drag: none;
   user-drag: none;
+
 }
 
 .logo-container .logo-text {
