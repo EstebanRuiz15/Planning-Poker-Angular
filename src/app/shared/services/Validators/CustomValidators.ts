@@ -13,7 +13,7 @@ export class CustomValidators {
       return { maxlength: true };
     }
 
-    if (/[_,.*#/-]/.test(value)) {
+    if (/[^a-zA-Z0-9\s]/.test(value)) {
       return { specialCharacters: true };
     }
 

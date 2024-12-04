@@ -131,12 +131,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.circle-text {
-  color: purple;
-  font-weight: bold;
-  font-size: 1.5rem;
+  &-text {
+    color: purple;
+    font-weight: bold;
+    font-size: 1.5rem;
+  }
 }
 
 .circle-name {

@@ -33,6 +33,9 @@ export class GamePageComponent implements OnInit, OnDestroy {
   faTableColumns = faTableColumns;
   isScoringModeVisible = false;
   scoringMode: 'fibonacci' | 'oneToTen' | 'twoToTwenty' = 'fibonacci';
+  isLoading:boolean=false;
+  isInviteModalVisible: boolean = false;
+  invitationLink: string = '';
   private subscriptions: Subscription = new Subscription();
 
   constructor(
@@ -204,12 +207,17 @@ export class GamePageComponent implements OnInit, OnDestroy {
 
   revealVotes(): void {
     if (this.gameId) {
+      this.isLoading = true;
+
+      setTimeout(() => {
+      if(this.gameId)
       this.subscriptions.add(
         this.gameService.revealVotes(this.gameId).subscribe({
           next: (game) => {
             this.gameState = game.state;
             this.gameVotes = game.votes;
             this.isGameComplete = true;
+            this.isLoading = false;
             this.changeDetectorRef.detectChanges();
             if(this.gameId)
             this.gameCommunicationService.updateGameCompletedStatus(this.gameId, true);
@@ -217,6 +225,7 @@ export class GamePageComponent implements OnInit, OnDestroy {
           }
         })
       );
+    }, 4000);
     }
   }
 
@@ -227,10 +236,27 @@ export class GamePageComponent implements OnInit, OnDestroy {
       navigator.clipboard.writeText(invitationLink).then(() => {
         this.linkCopied = true;
         setTimeout(() => this.linkCopied = false, 3000);
+        this.toastService.showToast("✓ Link copiado", "success")
       }).catch(err => {
         this.toastService.showToast(SERVICE_ERROR,"error")
       });
     }
+  }
+  openInviteModal() {
+    if (this.gameId && this.gameName) {
+      const baseUrl = window.location.origin;
+      this.invitationLink = `${baseUrl}/register/${this.gameName}/${this.gameId}`;
+      this.isInviteModalVisible = true;
+    }
+  }
+
+  closeInviteModal() {
+    this.isInviteModalVisible = false;
+  }
+
+  copyLinkAndClose() {
+    this.copyInvitationLink();
+    this.closeInviteModal();
   }
 
   getVotesForNumber(vote: number): number {

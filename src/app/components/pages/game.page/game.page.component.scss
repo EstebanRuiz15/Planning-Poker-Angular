@@ -134,21 +134,6 @@ app-cart {
   width: auto;
 }
 
-.confirmation-message {
-  position: absolute;
-  top: 100%;
-  right: 4%;
-  color: rgb(11, 173, 11);
-  font-weight: bold;
-  margin-top: 5px;
-  display: flex;
-  align-items: center;
-}
-
-.confirmation-message fa-icon {
-  margin-right: 5x;
-}
-
 .role-change-container {
   position: absolute;
   top: 50px;
@@ -212,4 +197,128 @@ app-cart {
       background-color: rgba(70, 7, 170, 0.2);
     }
   }
+}
+.loading-dots {
+  margin-left: 1.6rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dot {
+  width: 15px;
+  height: 15px;
+  margin: 0 5px;
+  background-color: #5917c2;
+  border-radius: 50%;
+  animation: bounce 0.5s infinite alternate;
+  box-shadow: 0 4px 6px rgba(153, 100, 238, 0.37);
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.dot:nth-child(4) {
+  animation-delay: 0.3s;
+}
+@keyframes bounce {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-10px);
+  }
+}
+
+.invite-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.invite-modal {
+  background-color: #1F0D3F;
+  margin-top: -2rem;
+  border-radius: 18px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #6429CD;
+  width: 500px;
+  max-width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.invite-modal-header {
+  background-color: #6429CD;
+  color: rgb(255, 255, 255);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+}
+
+.invite-modal-title {
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5em;
+  cursor: pointer;
+}
+
+.invite-modal-content {
+  padding: 20px;
+}
+
+.invitation-link-input {
+  margin-top: 20px;
+  width: 90%;
+  padding: 10px;
+  border: 2px solid #6e3696;
+  border-radius: 25px;
+  background-color: rgba(126, 79, 159, 0.144);
+  color: #ffffffce;
+  font-size: 16px;
+  font-weight: 100;
+}
+
+.invite-modal-footer {
+  padding: 15px;
+  display: flex;
+  justify-content: center;
+}
+
+.copy-link-btn {
+  background-color: white;
+  color: #4607aa;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border-style: solid;
+  border-color: #fff;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.copy-link-btn:hover {
+  transform: scale(0.95);
 }
